@@ -13,3 +13,6 @@ dist-gzip:
 	cp -r $(distfiles) tmp/
 	tar -C tmp -cvzf msmtp-scripts-$(VERSION).tar.gz .
 
+clean:
+	rm -f msmtp-scripts-*.tar.gz
+	rm -rf tmp
