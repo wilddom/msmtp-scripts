@@ -2,7 +2,7 @@
 
 VERSION=1.0.0
 
-distfiles = AUTHORS COPYING NEWS README THANKS doc msmtpq msmtpq-mta set_sendmail
+distfiles = AUTHORS COPYING NEWS README THANKS doc msmtpq msmtpq-mta
 
 all: dist-gzip
 
