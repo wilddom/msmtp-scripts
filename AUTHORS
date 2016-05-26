@@ -1,0 +1,4 @@
+The originaly msmtp-scripts were written by Martin Lambers <marlam@marlam.de>,
+and have been modified by Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
+Individual source files may have different copyright holders, see each file for
+details. Much of the code is shared with mpop (http://mpop.sourceforge.net).

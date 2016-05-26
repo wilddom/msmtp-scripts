@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+# Create msmtp user/group if they do not exist
+if ! getent passwd | grep -q "^msmtp:"; then
+    echo "Adding msmtp group and user..."
+    addgroup --quiet --system msmtp || true
+fi
+
+mkdir -p /var/log/msmtp
+mkdir -p /var/spool/msmtp
+touch /var/log/msmtp/msmtp.log
+touch /var/log/msmtp/queue.log
+chown root:msmtp /var/log/msmtp
+chown root:msmtp /var/log/msmtp/queue.log
+chown root:msmtp /var/spool/msmtp
+# Need write permission to create/destroy lock directory
+chmod 0770 /var/spool/msmtp
+chmod 0700 /var/spool/msmtp/* 2>/dev/null || true
+chmod 0730 /var/log/msmtp
+chmod 0720 /var/log/msmtp/queue.log 2>/dev/null || true
