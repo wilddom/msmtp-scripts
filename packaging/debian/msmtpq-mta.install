@@ -1,0 +1,6 @@
+msmtpq/msmtpq usr/bin
+msmtpq/msmtp-queue usr/bin
+msmtpq-mta/msmtpq-mta usr/bin
+msmtpq-mta/msmtpq-mta.hourly etc/cron.hourly/msmtpq-mta
+msmtpq-mta/msmtpq-mta.logrotate etc/logrotate.d/msmtpq-mta
+msmtpq-mta/msmtpq-mta.conf etc/

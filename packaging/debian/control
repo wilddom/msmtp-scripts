@@ -1,0 +1,31 @@
+Source: msmtp-scripts
+Section: mail
+Priority: extra
+Maintainer: Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
+Standards-Version: 3.9.6
+Homepage: http://msmtp-scripts.sourceforge.net/
+
+Package: msmtpq
+Architecture: all
+Depends:
+    ${misc:Depends},
+    msmtp | msmtp-gnome
+Description: queueing wrapper around msmtp light SMTP client
+ msmtpq is a wrapper script around msmtp light SMTP client that
+ allows adds queueing of email, for example in the case of failure
+ to send the mail or due to lack of network connection. 
+
+Package: msmtpq-mta
+Architecture: all
+Depends:
+    ${misc:Depends},
+    msmtpq
+Provides: mail-transport-agent
+Conflicts: mail-transport-agent
+Replaces: mail-transport-agent
+Description: queuing wrapper around msmtpq light SMTP client as MTA
+ msmtpq is a wrapper script around msmtp light SMTP client that
+ allows adds queueing of email, for example in the case of failure
+ to send the mail or due to lack of network connection. 
+ .
+ This package uses msmtpq as the system MTA (sendmail command).
