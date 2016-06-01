@@ -1,0 +1,3 @@
+msmtpq-ng-mta/msmtpq-ng-mta usr/bin
+msmtpq-ng-mta/sendmail-q.hourly etc/cron.hourly/sendmail-q
+msmtpq-ng-mta/msmtpq-ng-mta.rc etc/

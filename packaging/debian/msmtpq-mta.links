@@ -1,5 +1,0 @@
-usr/bin/msmtpq-mta usr/sbin/sendmail
-usr/bin/msmtpq-mta usr/lib/sendmail
-bin/true usr/bin/newaliases
-usr/share/man/man1/msmtpq.1.gz usr/share/man/man1/msmtpq-mta.1.gz
-usr/share/man/man1/msmtpq.1.gz usr/share/man/man8/sendmail.8.gz

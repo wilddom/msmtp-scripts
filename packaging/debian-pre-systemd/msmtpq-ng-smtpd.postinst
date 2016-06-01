@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -e
+
+update-inetd --group MAIL --add "smtp    stream  tcp     nowait  msmtp.msmtp     /usr/sbin/sendmail      -bs"
+update-inetd --enable smtp

@@ -1,0 +1,10 @@
+msmtp-scripts as a Mail Transport Agent
+=======================================
+
+It is possible to use msmtpq-ng as a MTA (like postfix, exim, etc.) by installing
+the package msmtpq-ng-mta. It will provide the basic features required to be a MTA
+(/usr/{sbin,lib}/sendmail, newaliases, etc.).
+
+The msmtpq-ng-mta package is not (and will never be) full featured MTA.
+
+Package is heavily modified, but based on, msmtp packaging from Ubuntu.

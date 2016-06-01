@@ -1,0 +1,10 @@
+[Unit]
+Description=Accept SMTP connections and pass them to sendmail -bs on stdin/stdout
+
+[Socket]
+ListenStream=localhost:25
+Accept=yes
+MaxConnections=1
+
+[Install]
+WantedBy=sockets.target

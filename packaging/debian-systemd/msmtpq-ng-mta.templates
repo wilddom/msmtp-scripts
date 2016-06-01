@@ -1,0 +1,18 @@
+Template: msmtpq-ng-mta/send_delay
+Type: integer 
+Default: 0
+_Description: Required delay before held mail may be sent
+ msmtpq-ng allows to require that held mail sit in the queue
+ for some numbers of seconds before allowing the mail to be
+ sent.  This is useful for those of use who need a chance
+ to rethink mail we've queued for sending.
+ Note that this may differ from msmtpq-ng not used as MTA.
+
+Template: msmtpq-mg-mta/maximum_queue_lifetime
+Type: integer
+Default: 345600
+_Description: Maximum time a message may stay in queue
+ Unheld messages which fail to be send for longer than
+ this number of seconds are purged from the queue
+ automatically on the next queue run.
+ Note that this may differ from msmtpq-ng not used as MTA.

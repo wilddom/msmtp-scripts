@@ -1,0 +1,2 @@
+msmtpq-ng-mta/sendmail-bs@.service lib/systemd/system
+msmtpq-ng-mta/sendmail-bs.socket lib/systemd/system

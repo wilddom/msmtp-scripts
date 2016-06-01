@@ -1,0 +1,11 @@
+usr/bin/msmtpq-ng-mta usr/sbin/sendmail
+usr/bin/msmtpq-ng-mta usr/lib/sendmail
+usr/bin/msmtpq-ng-queue-mta usr/sbin/mailq
+usr/bin/msmtpq-ng-queue-mta usr/sbin/postsuper
+usr/bin/msmtpq-ng-queue-mta usr/sbin/postqueue
+bin/true usr/bin/newaliases
+usr/share/man/man1/msmtpq-ng.1.gz usr/share/man/man1/msmtpq-ng-mta.1.gz
+usr/share/man/man1/msmtpq-ng.1.gz usr/share/man/man8/sendmail.8.gz
+usr/share/man/man1/msmtpq-ng-queue.1.gz usr/share/man/man1/mailq.1.gz
+usr/share/man/man1/msmtpq-ng-queue.1.gz usr/share/man/man1/postqueue.1.gz
+usr/share/man/man1/msmtpq-ng-queue.1.gz usr/share/man/man1/postsuper.1.gz

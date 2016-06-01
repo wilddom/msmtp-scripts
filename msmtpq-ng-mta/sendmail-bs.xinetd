@@ -1,0 +1,14 @@
+# description: Accept SMTP connections and pass them to sendmail -bs on stdin/stdout
+service smtp
+{
+	port 		= 25
+	socket_type	= stream
+	wait		= no
+	user		= msmtp
+	group		= msmtp
+	server		= /usr/sbin/sendmail
+	server_args	= -bs
+	bind		= localhost
+	only_from	= localhost
+	disabled	= no
+}

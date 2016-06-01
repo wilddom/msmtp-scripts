@@ -1,0 +1,66 @@
+.\" -*-nroff-*-
+.\"
+.\" Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
+.\" 2015, 2016
+.\" Martin Lambers
+.\" Copyright (C) 2011
+.\" Scott Shumate
+.\" Copyright (C) 2016
+.\" Daniel Dickinson
+.\"
+.\" Permission is granted to copy, distribute and/or modify this document
+.\" under the terms of the GNU Free Documentation License, Version 1.2 or
+.\" any later version published by the Free Software Foundation; with no
+.\" Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+.TH MSMTPQ-NG 1 2016-06
+.SH NAME
+msmtpq-ng \- An queuing mail transport agent
+.SH SYNOPSIS
+.IP "Sendmail mode (default):"
+.B msmtpq-ng
+[option...] [\-\-] recipient...
+.br
+.B msmtpq-ng
+[option...] \-t [\-\-] [recipient...]
+.SH DESCRIPTION
+In the default sendmail mode, msmtpq queues mail it receives on stdin
+and attempts to use msmtp to send via an SMTP server for delivery and
+queues it for retrying if there is an error or no connection with
+which to send mail.
+.SH EXIT STATUS
+The standard sendmail exit status codes are used, as defined in sysexits.h.
+.SH OPTIONS
+Options override configuration file settings.
+.br
+They are compatible with sendmail where appropriate.
+.IP "\fBGeneral options\fP"
+As for msmtp, with the following additions:
+.IP \-bp
+List queue.
+.IP \-bs
+Use SMTP (RFC821) subset (MUST but not all SHOULD) to communicate over stdin and stdout, which
+should be sufficient to allow msmtpq-ng to be used as an SMTP server when combined
+with a tool like xinetd that handles the network communications.
+.IP \-i
+Ignore dots alone in incoming messages.
+.IP \-q
+Flush queue.
+.IP \-qI <ID>
+Send message from queue with ID <ID>.
+.IP "\--help"
+Print help.
+.SH FILES
+.IP "/etc/msmtpq-ng.rc"
+System configuration file.
+.IP "~/.msmtpq-ng.rc"
+User configuration file (overrides system configuration file if present).
+.br
+.SH AUTHORS
+msmtpq-ng was initially written by Chris Gianniotis (as msmtpq, based on the
+msmtpqueue concept by Martin Lambers), and largely rewritten by Daniel
+Dickinson.
+.br
+.SH SEE ALSO
+.BR msmtpq-ng-queue (1),
+.BR msmtp (1),
+.BR sendmail (8)

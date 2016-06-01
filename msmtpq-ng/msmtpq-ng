@@ -1,0 +1,813 @@
+#!/bin/sh
+
+##--------------------------------------------------------------
+##
+##  msmtpq-ng : sendmail compatible queue which sends mail using
+##              msmtp light SMTP client
+##  Concept based on msmtpqueue script by Martin Lambers
+##  Copyright (C) 2008 - 2015 Chris Gianniotis
+##  Largely rewritten by Daniel Dickinson 2016
+##  Copyright (C) 2016 Daniel Dickinson
+##
+##  This program is free software: you can redistribute it and/or modify
+##  it under the terms of the GNU General Public License as published by
+##  the Free Software Foundation, either version 3 of the License, or, at
+##  your option, any later version.
+##
+##--------------------------------------------------------------
+##
+## msmtpq-ng is meant to be used by an email client - in 'sendmail' mode
+##   for this purpose, it can be invoked directly as 'msmtpq-ng'.
+##   It also supports sendmail's -bs mode which allows, with the aid
+##   aid of something like xinetd or systemd socket, use as an SMTP
+##   server (no auth).
+##
+## there is a queue log file, distinct from the msmtp log,
+##   for all events & operations on the msmtp queue
+##
+## (mutt users, using msmtpq-ng in 'sendmail' mode,
+##  should make at least the following two settings in their .muttrc
+##    set sendmail = /path/to/msmtpq-ng
+##    set sendmail_wait = -1
+##
+##  please see the msmtp man page and docs for further mutt settings
+##    and optimisations
+## )
+##
+## Rewritten to be POSIX shell compliant and more sendmail
+## compatible (esp. wrt to listing/managing queue) by
+## Daniel Dickinson <msmtp-scripts@daniel.thecshore.com> May-June 2016
+##
+
+## Global variables
+LKD=""
+
+## Useful functions
+
+dsp() {
+	local L
+	for L; do
+		[ -n "$L" ] && echo "  $L" || echo
+	done
+}
+
+err() {
+	dsp '' "$@" ''
+	exit 1
+}
+
+# Configuration files
+#   System-wide defaults in /etc/msmtpq-ng.rc
+#   User settings in ~/.msmtpq-ng.rc
+
+if [ "$MSMTP_SKIP_CONF" != "true" ]; then
+	[ -r "/etc/msmtpq-ng.rc" ] && . /etc/msmtpq-ng.rc
+	[ -r "~/.msmtpq-ng.rc" ] && . ~/.msmtpq-ng.rc
+fi
+
+if [ -n "$MSMTP_OVERRIDE_CONF" ]; then
+	[ -r "$MSMTP_OVERRIDE_CONF" ] && . "$MSMTP_OVERRIDE_CONF"
+	export MSMTP_OVERRIDE_CONF
+fi
+
+## only if necessary (in unusual circumstances - e.g. embedded systems),
+##   enter the location of the msmtp executable  (no quotes !!)
+##   e.g. ( MSMTP=/path/to/msmtp )
+##   and uncomment the test for its existence
+[ -z "$MSMTP" ] && MSMTP=msmtp
+[ -n "$(which "$MSMTP")" ] || [ -x "$MSMTP" ] || {
+	err "msmtpq-ng : can't find the msmtp executable [ $MSMTP ]"	# if not found - complain ; quit
+}
+
+## set the queue var to the location of the msmtp queue directory
+##   if the queue dir doesn't yet exist, create it (0700)
+##     before using this script
+##       e.g. ( mkdir msmtp.queue      )
+##            ( chmod 0700 msmtp.queue )
+##
+## the queue dir - modify this to reflect where you'd like it to be  (no quotes !!)
+[ -z "$Q" ] && Q=~/.msmtp.queue
+[ -d "$Q" ] || {
+	err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''	# if not present - complain ; quit
+}
+
+## set the queue log file var to the location of the msmtp queue log file
+##   where it is or where you'd like it to be
+##     ( note that the LOG setting could be the same as the )
+##     ( 'logfile' setting in .msmtprc - but there may be   )
+##     ( some advantage in keeping the two logs separate    )
+##   if you don't want the log at all unset (comment out) this var
+##     LOG=~/log/msmtp.queue.log  -->  #LOG=~/log/msmtp.queue.log
+##     (doing so would be inadvisable under most conditions, however)
+##
+## the queue log file - modify (or comment out) to taste  (but no quotes !!)
+[ -z "$LOG" ] && LOG=~/log/msmtp.queue.log
+[ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=8		# Default to showing all log messages
+
+## Secure log and spool settings
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
+
+## Default to not holding command line mail
+[ -z "$MSMTP_HOLD_CLI_MAIL" ] && MSMTP_HOLD_CLI_MAIL=false
+
+## Default to holding SMTP mail (this helps avoid accidentally
+## becoming an open relay
+[ -z "$MSMTP_HOLD_SMTP_MAIL" ] && MSMTP_HOLD_SMTP_MAIL=true
+
+## Only send messages marked hold older than number of seconds
+[ -z "$MSMTP_SEND_DELAY" ] && MSMTP_SEND_DELAY=0
+
+## Maximum queue lifetime (auto-purged after this, unless on hold)
+[ -z "$MSMTP_MAX_QUEUE_LIFETIME" ] && MSMTP_MAX_QUEUE_LIFETIME=345600	# Four days
+
+## Lock directory
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock
+
+## msmtpq-ng-queue binary
+[ -z "$MSMTQ_NG_QUEUE" ] && MSMTPQ_NG_QUEUE=msmtpq-ng-queue
+
+## ======================================================================================
+
+## msmtpq can use the following environment variables :
+##   EMAIL_CONN_TEST     if =x will suppress any testing for a connection
+##                       if =p or unset will use a ping test (debian.org) for a connection
+##                       if =P will use a fast ping test (8.8.8.8) for a connection
+##                       if =n will use netcat (nc) to test for a connection
+##                       if =s will use bash sockets to test for a connection
+##
+[ -z "$EMAIL_CONN_TEST" ] && EMAIL_CONN_TEST=n
+[ -z "$EMAIL_CONN_TEST_PING" ] && EMAIL_CONN_TEST_PING=debian.org
+[ -z "$EMAIL_CONN_TEST_IP" ] && EMAIL_CONN_TEST_IP=8.8.8.8
+[ -z "$EMAIL_CONN_TEST_SITE" ] && EMAIL_CONN_TEST_SITE=www.debian.org
+## ======================================================================================
+
+LOCK_CMD=flock			# Default to flock
+
+[ -z "$(which flock)" ] && LOCK_CMD=lock		# If we don't have flock try busybox lock
+[ -z "$(which "$LOCK_CMD")" ] && {
+	log -e 72 "   msmtpq-ng: Unable to find lock command"
+	exit 72						# Exit with EX_OSFILE
+}
+
+## write/remove queue lockfile on forced termination
+on_exit() {                          # unlock the queue on exit if the lock was set here
+	local LOK="${MSMTP_LOCK_DIR}/msmtpq-ng.lock"	# lock file name
+	if [ "$(basename $LOCK_CMD)" = "lock" ]; then
+		[ -n "$LKD" ] && lock -u "$LOK" && rm -f "$LOK"
+	fi
+}
+
+trap on_exit INT TERM EXIT				# run 'on_exit' on exit
+
+umask $MSMTP_UMASK
+
+usage() {
+	echo "$(basename $0): [options] -- <recipient>[ <recipient>]..."
+	echo "$(basename $0): [options] -t -- <recipient>[ <recipient>]..."
+	echo ""
+	echo "-bp		List queue"
+	echo "-bs		SMTP (RFC821) mode"
+	echo "-i		Don't use line with only a dot as end-of-mail indicator"
+	echo "-q		Flush queue"
+	echo "-qI <ID>	Flush a message with ID <ID>"
+	echo "--help		This message."
+	echo "<other>		Passed on to msmtp command"
+	exit 1
+}
+
+## make an entry to the queue log file, possibly an error
+##   (log queue changes only ; not interactive chatter)
+## usage : log [ -e errcode ] msg [ msg ... ]
+##  opts : -e <exit code>  an error ; log msg including error code
+## display msg to user, as well
+##
+log() {
+	local ARG RC PFX PRI LOGLEVEL
+	PRI="$1"						# Log priority
+	shift
+
+	if [ "$LOG" != "syslog" ]; then
+		# time stamp prefix - "2008 13 Mar 03:59:45 "
+		PFX="$('date' +'%Y %d %b %H:%M:%S')"
+		case "$PRI" in
+		emerge)
+			PFX="$PFX [EMERGENCY]"
+			LOGLEVEL=1
+			;;
+		alert)
+			PFX="$PFX [ALERT]"
+			LOGLEVEL=2
+			;;
+		crit)
+			PFX="$PFX [CRITICAL]"
+			LOGLEVEL=3
+			;;
+		err)
+			PFX="$PFX [ERROR]"
+			LOGLEVEL=4
+			;;
+		warning)
+			PFX="$PFX [WARNING]"
+			LOGLEVEL=5
+			;;	
+		notice)
+			PFX="$PFX [NOTICE]"
+			LOGLEVEL=6
+			;;
+		info)
+			PFX="$PFX [INFO]"
+			LOGLEVEL=7
+			;;
+		debug)
+			PFX="$PFX [DEBUG]"
+			LOGLEVEL=8
+			;;
+		esac
+		if [ "$LOGLEVEL" -gt "$MAXLOGLEVEL" ]; then
+			return
+		fi
+	fi
+	
+	if [ "$1" = '-e' ] ; then				# there's an error exit code
+		RC="$2"						# take it
+		shift 2						# shift opt & its arg off
+	fi
+
+	[ "$MSMTP_QUEUE_QUIET" != "true" ] && dsp "$@"		# display msg to user, as well as logging it
+
+	if [ -n "$RC" ] && [ "$RC" != "0" ]; then		# an error ; leave w/error return
+		EXITCODE="exit code = $RC"			# exit code for log
+	else
+		EXITCODE=""
+	fi
+
+	ARG="$@"
+
+	if [ -n "$EXITCODE" ]; then
+		ARG="$ARG $EXITICODE"
+	fi
+
+	if [ -n "$LOG" ] && [ "$LOG" != "syslog" ]; then	# log is defined and in use
+		for ARG ; do					# each msg line out
+			if [ -n "$ARG" ]; then
+				umask $MSMTP_LOG_UMASK
+				echo "$PFX : $ARG $EXITCODE" >> "$LOG"	# line has content ; send it to log
+				umask $MSMTP_UMASK
+			fi
+		done
+	elif [ "$LOG" = "syslog" ]; then
+		echo "$ARG" | logger -i -t msmtpq-ng -p mail.$PRI
+	fi
+
+}
+
+#
+# Prevent multiple process from access queue at once
+# 
+# $@: Command and paramters to execute inside the lock
+#
+lock_queue() {
+	local LOK="${MSMTP_LOCK_DIR}/msmtpq-ng.lock"	# lock file name
+	local MAX=240 SEC=0 RC				# max seconds to gain a lock ; seconds waiting
+
+	if [ "$LOCK_CMD" = "flock" ]; then		# flock makes life easy
+		flock -w $MAX "$LOK" "$0" "$@"		# execute commands inside flock
+		RC=$?
+		if [ "$RC" = "1" ]; then
+			# Couldn't acquire lock
+			log err -e 71 "cannot use queue $Q : waited $MAX seconds to" \
+				"  acquire lock [ $LOK ]; giving up" \
+				'if you are certain that no other instance of this script' \
+				"  is running, then 'rm -f' the lock file manually" ''
+        		exit 71				# exit with EX_OSERR
+    		fi
+		rm -f "$LOK"				# make sure we don't have file with permissions
+							# that blocks others users from locking
+		return $RC				# return exit code of command
+	else						# busybox lock
+		touch "$LOK" 2>/dev/null
+		$LOCK_CMD -n "$LOK" && LKD='t'
+		while [ -z "$LKD" ] && [ $SEC -lt $MAX ]; do	# lock file present
+			sleep 1					# wait a second
+			SEC=$((SEC + 1))			# accumulate seconds
+			touch "$LOK" 2>/dev/null
+			$LOCK_CMD -n "$LOK" && LKD='t'
+		done						# try again while locked for MAX secs
+		[ -z "$LKD" ] && {
+ 			# lock file still there and locked
+			log err -e 71 "cannot use queue $Q : waited $MAX seconds for" \
+				"  lockdir [ $LOK ] to vanish ; giving up" \
+				'if you are certain that no other instance of this script' \
+				"  is running, then 'rmdir' the lock dir manually" ''
+			exit 71					# exit with EX_OSERR
+		}
+		$0 $@						# Execute command
+		RC=$?
+		$LOCK_CMD -u "$LOK"
+		rm -f "$LOK"				# make sure we don't have file with permissions
+		return $RC
+	fi
+}
+
+## test whether system is connected
+## returns t/f (0/1)
+##
+connect_test() {
+	if [ -z "$EMAIL_CONN_TEST" ] || [ "$EMAIL_CONN_TEST" = 'p' ] ; then	# use ping test (default)
+		# verify net connection - ping ip address of configured site
+		# would ping -qnc2 -w4 be better ?
+		# would ping -qnc1 -w10 or -w20 be better ?
+		#ping -qnc1 -w4 debian.org >/dev/null 2>&1 || return 1
+		ping -qnc2 -w10 $EMAIL_CONN_TEST_PING >/dev/null 2>&1 || return 1
+	elif [ "$EMAIL_CONN_TEST" = 'P' ] ; then				# use quicker ping test
+		# I personally think that including a DNS lookup
+		# is a better connection test but some
+		# have found the above test too slow
+		ping -qnc1 -w4 $EMAIL_CONN_TEST_IP >/dev/null 2>&1 || return 1
+	elif [ "$EMAIL_CONN_TEST" = 'n' ] ; then				# use netcat (nc) test
+		# must, of course, have netcat (nc) installed
+		which nc >/dev/null 2>&1 || {
+			# if not found - complain ; quit
+			log crit -e 1 "can't find netcat executable [ nc ]"
+			return 1
+		}
+		nc -vz $EMAIL_CONN_TEST_SITE 80 >/dev/null 2>&1 || return 1
+	elif [ "$EMAIL_CONN_TEST" = 's' ] ; then				# use sh sockets test
+		# note that this does not work on debian systems
+		#   where bash opened sockets are suppressed for security
+		#   reasons on multiuser systems - however, this should be
+		#   ok for single user systems (including embedded systems)
+		# test whether this is supported on your system before using...
+		# thank you to Brian Goose, on the list, for encouraging this
+		exec 3<>/dev/udp/$EMAIL_CONN_TEST_PING/80 || return 1		#open socket on site ; use dns
+		exec 3<&- ; exec 3>&-						# close socket
+	fi
+	return 0
+}
+
+#
+## send a queued mail out via msmtp
+##
+## $1: mail_id
+send_queued_mail() {
+	local FQP="${Q}/${1}"		# fully qualified path name
+	local RC=0			# for msmtp exit code
+	local RETMSG
+
+	# Held messages may not sent until MSMTP_SEND_DELAY has elapsed
+	if [ -e "${FQP}.hold" ]; then
+		if [ "$(($(date +%s -r "${FQP}.mail" 2>/dev/null) + $MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
+			log info "mail [ $1 ] from queue; too new to unhold"
+			echo "Too new" >"${FQP}".msg
+			# This is temporary error, so exit with EX_TEMPFAIL
+			return 75
+		fi
+	fi
+
+	if [ -f "${FQP}.msmtp" ] ; then			# corresponding .msmtp file found
+		[ "$EMAIL_CONN_TEST" != 'x' ] && \
+			connect_test || {
+				log notice "mail [ $1 ] from queue ; couldn't be sent - host not connected"
+				echo "Host not connected" >"${FQP}".msg
+				# Connetion error is temporary; exit with EX_TEMPFAIL
+				return 75
+			}
+
+		# Attempt to send via msmtp
+		RETMSG="$($MSMTP $(cat "${FQP}.msmtp") < "${FQP}.mail" 2>&1)"
+		RC=$?
+		if [ "$RC" = "0" ]; then       			# this mail goes out the door
+			# log success (and maybe display)
+			log info "mail [ $1 ] from queue ; send was successful ; purged from queue"
+			rm -f ${FQP}.*				# nuke all queue mail files
+			# If message is reaches maximum time allowed in queue
+		elif [ "$(($(date +%s -r "${FQP}.mail") + $MSMTP_MAX_QUEUE_LIFETIME))" -le "$(date +%s)" ]; then
+			# Purge it from the queue
+			rm -f "${FQP}".*
+			log warning "mail [ $1 ] exceeded queue lifetime; purged"
+			if echo "$RETMSG" | grep -q 'no recipients found'; then
+				if [ "$MSMTP_IGNORE_NO_RECIPIENTS" != "true" ]; then
+					# Only log error if no recipients and ignoring
+					log warning "mail [ $1 ] from queue ; send failed ; no recpients"
+					echo "No recipients" >"${FQP}".msg
+				else
+					# If we're not ignoring it's fatal and remove the mail
+					log crit "mail [ $1 ] from queue ; send failed ; no recipients" \
+						"dequeued mail: [ $1 ]"
+					rm -f ${FQP}.*		# nuke all queue mail files
+				fi
+			fi
+		else	# send was unsuccessful
+			# For all other errors, log it and leaved queued	
+			log err "mail [ $1 ] from queue ; send failed ; msmtp rc = $RC"
+			echo "$RETMSG" >${FQP}.msg
+		fi
+		return $RC					# func returns exit code
+	else	
+		# corresponding param file not found
+		log crit "preparing to send .mail file [ $1 ] [ ${FQP}.mail ] but" \
+			"  corresponding .msmtp file [ ${FQP}.msmtp ] was not found in queue" \
+			'  skipping this mail ; this is worth looking into'
+		echo "Missing .msmtp file" >"${FQP}".msg
+	fi  
+	return 64
+}
+
+## run (flush) queue
+##
+run_queue() {
+	local M ID LST="$('ls' $Q/*.mail 2>/dev/null)" HO=1	# list of mails in queue
+
+	if [ -n "$LST" ] ; then					# something in queue
+		ID="$(basename $M .mail)"
+		# Only send mail not marked hold
+		[ ! -e "${Q}/${ID}.hold" ] && {
+			send_queued_mail "$ID"			# send mail - pass {id} only
+			HO=0
+		}
+	fi
+
+	# If hold only (i.e. no non-hold messages)
+	if [ "$HO" = "1" ]; then
+		[ -z "$EMAIL_QUEUE_QUIET" ] && dsp '' 'mail queue is empty (nothing to send)' ''
+	fi # inform user (if not running as MTA)
+}
+
+make_id() {
+	local INC=0			# increment counter for (possible) base fqp name collision
+
+    	INCSTR="$(printf "%03d" $INC)"
+	ID="$(date +%Y%m%d%H%M)"	# make filename id for queue    (global
+	FQP="${Q}/$ID"			# make fully qualified pathname  vars)
+	if [ -f "${FQP}.mail" ] || [ -f "${FQP}.msmtp" ] ; then	# ensure fqp name is unique
+		INC=1			# initial increment
+    		INCSTR="$(printf "%03d" $INC)"
+
+		# fqp name w/incr exists
+		while [ -f "${FQP}${INCSTR}.mail" ] || [ -f "${FQP}${INCSTR}.msmtp" ]; do
+			INC=$((INC + 1))	# bump increment
+    			INCSTR="$(printf "%3d" $INC)"
+     		done
+	fi
+ 	ID="${ID}${INCSTR}"			# unique ; set id
+	FQP="${FQP}${INCSTR}"			# unique ; set fqp name
+}
+
+## enqueue a mail
+##
+## $@: Arguments to msmtp
+##
+enqueue_mail() {
+	# Write command-line parameters to queue file
+	echo "$@" >"${FQP}.msmtp"
+	RC=$?
+	if [ "$RC" != "0" ]; then
+		log err -e "$RC" "creating msmtp cmd line file { $* }" \
+		"           to [ ${ID}.msmtp ] : failed"
+		echo "Failed to create .msmtp file; exit code = $RC" >"${FQP}".msg
+		return $RC
+	else
+		log info "enqueued mail as : [ $ID ] ( $* ) : successful" # (queue .mail file is already there)
+	fi
+	return 0
+}
+
+## send a mail (enqueue it and attempt delivery, if possible)
+## if send is successful, msmtp will also log it (if logging enabled in ~/.msmtprc)
+##
+## $@: Arguments to msmtp
+##
+send_mail() {
+	local RETMSG
+	local RC
+
+	enqueue_mail "$@"		# We always queue so as not to duplicate send logic
+	RC=$?
+
+	if [ -e "${FQP}.hold" ]; then
+		log info "mail for [ $* ] : to be held; queuing message"
+		echo "Held" >"${FQP}".msg
+		return $RC
+	elif [ "$MSMTP_QUEUE_ONLY" = "true" ]; then
+		log info "mail for [ $* ] : msmtpq set to queue only; queuing message"
+		echo "Queue only" >"${FQP}".msg
+		return $RC
+	elif [ "$EMAIL_CONN_TEST" != 'x' ] && ! connect_test; then
+		log notice "mail for [ $* ] : couldn't be sent - host not connected"
+		echo "Not connected" >"${FQP}".msg
+		return $RC
+	fi
+
+	if [ "$RC" != "0" ]; then
+		return $RC
+	fi
+  
+	send_queued_mail "${ID}"
+	RC=$?
+	return $RC
+}
+
+##
+## Get sender from MAIL FROM
+##
+## $@: MAIL FROM line
+##
+## FROM: must be alterable by this function and accessible from caller
+## Contains sender address
+##
+smtp_mail_from() {
+	# sending mailbox
+	FROM="$(echo "$@"|sed -e 's/^[Mm][Aa][Ii][Ll] [Ff][Rr][Oo][Mm]:<\([^@][^@]*@[^@][^@]*\)>.*/\1/')"
+
+	# Got return-path
+	if [ -n "$from" ]; then
+		echo "250 Ok"	# Success response
+		log debug "[SMTP] Got return-path"
+		return 0
+	else
+		# Bad input for MAIL FROM
+		FROM=""
+		echo "501 Syntax error in parameter or arguments"
+		log err "[SMTP] Bad line $line getting mail command"
+		return 1
+	fi
+}
+
+##
+## Act as SMTP server (RFC821) on stdin/stdout
+##
+smtp_server() {
+	make_id				# make base queue filename id for this mail
+	local oIFS="$IFS"
+	local state="initial"
+	local from to RC FROM
+
+	# Initial greeting
+	echo "220 $(cat /proc/sys/kernel/hostname) Simple Mail Transer Service Ready"
+
+	# Split on newline only
+	IFS=$'\n'
+	cat - | while read line; do
+		IFS="$oIFS"
+		# First we need a HELO (we don't undertand EHLO)
+		if [ "$state" = "initial" ] && echo "$line" | grep -qi '^helo '; then
+			state=mail
+			echo "250 Ok"
+			to=""
+			from=""
+			log debug "[SMTP] Got HELO"
+			continue		# next line
+		elif [ "$state" = "initial" ]; then
+			# We don't implement EHLO
+			if echo "$line"|grep -qi '^ehlo '; then
+				echo "502 Command not implemented"
+				log debug "[SMTP] Got EHLO, we only understand HELO"
+			# Any other command at this point is wrong
+			else
+				echo "503 Command out of sequence"
+				log err "[SMTP] Bad line $line expecting HELO"
+			fi
+			continue		# next line
+		fi
+
+		# On QUIT exit the server
+		if echo "$line" | grep -qi '^quit'; then
+			echo "221 $(cat /proc/sys/kernel/hostname) closing transmission channel"
+			log debug "[SMTP] Got QUIT"
+			return
+		fi
+
+		# We accept MAIL FROM until DATA is in progress
+		if  [ "$state" = "mail" ] || [ "$state" = "rcpt" ]; then
+			if echo "$line" | grep -qi '^mail from:<[^@]\+@[^@]\+>'; then
+				# mail command resets SMTP dialogue, therefore remove
+				# anything we've gotten so far
+				rm -f "${FQP}".*
+
+				state=mail
+				to=""
+				FROM=""
+				smtp_mail_from "$line" && state=rcpt
+				log debug "[SMTP] Got MAIL FROM"
+				continue	# next line
+			fi
+		# after data MAIL FROM starts a new transaction
+		elif  [ "$state" = "postdata" ] && echo "$line" | grep -qi '^mail from:<.*@.*>'; then
+			make_id
+			state=mail
+			to=""
+			FROM=""
+
+			smtp_mail_from "$line" && state=rcpt
+			log debug "[SMTP] Got MAIL FROM after DATA"
+			continue		# next line
+		fi
+
+		# We can reset at anytime except while receiving data
+		if [ "$state" != "initial" ] && [ "$state" != "data" ] && echo "$line" | grep -qi '^rset'; then
+			# reset state
+			state=mail
+			to=""
+			from=""
+			rm -f "${FQP}".*
+			echo "250 Ok"			# response
+			log debug "[SMTP] Got RSET"
+			continue			# next line
+		fi
+
+		# Got a recipient
+		if [ "$state" = "rcpt" ] && echo "$line" | grep -qiE "^rcpt to:<[^@]+@[^@]+>"; then
+			local newto="$(echo "$line"|sed -e 's/[Rr][Cc][Pp][Tt] [Tt][Oo]:<\([^@][^@]*@[^@][^@]*\)>.*/\1/')"
+
+			# Bad input on RCPT TO
+			if [ -z "$newto" ]; then
+				echo "501 Syntax error in parameter or arguments"
+				log err "[SMTP] Bad line $line; invalid rcpt to"
+				continue		# next line
+			fi
+
+			if [ -z "$to" ]; then
+				to="$newto"
+			else
+				to="$to $newto"
+			fi
+			echo "250 Ok"
+			log debug "[SMTP] Got RCPT TO"
+			continue			# next line
+		# Got RCPT TO in at the wrong time
+		elif [ "$state" != "rcpt" ] && echo "$line" | grep -qiE "^rcpt to:<[^@]+@[^@]+>"; then
+			echo "503 Command out of sequence"
+			log err "[SMTP] Bad line $line when not expecting RCPT TO"
+		fi
+
+		# Can do a NOOP at anytime
+		if [ "$state" != "initial" ] && echo "$line" | grep -qi "^noop"; then
+			echo "250 Ok"
+			log debug "[SMTP] Got NOOP"
+			continue			# next line
+		fi
+
+		# Time for the actual data
+		if [ "$state" = "rcpt" ] && echo "$line" | grep -qi "^data"; then
+			state=data
+			echo "354 Start of mail input; end with <CRLF>.<CRLF>"
+			log debug "[SMTP] Got DATA"
+			continue	# next line
+		fi
+
+		# We're in accept data mode
+		if [ "$state" = "data" ]; then
+			# Strip bare line feeds and carriage returns (they shouldn't occur)
+			cleanline="$(echo "$line"|sed -e '/^$/d
+s/\r\(..*\)\r$/\1/g'|tr -d '\r')"
+			# Then take from the beginning to line ending with .<CRLF>
+			if ! echo "$cleanline"|grep -q '^\.$'; then
+				echo "$cleanline"|sed -e 's/^\.\(..*\)$/\1/' >>"${FQP}.mail"
+				RC=$?
+				# If there is error report it
+				if [ "$RC" != "0" ]; then
+					echo "554 Transaction Failed"
+					log err -e $RC "[SMTP] mail for [ $from ] failed; failed to queue mail body"
+					rm -f "${FQP}.*"
+				fi
+				continue 	# next line
+			fi
+
+			# Record sender and recipients in msmtp command line form
+			echo "-f $from -- $to" >"${FQP}".msmtp
+			RC=$?
+		
+			# If we failed to record msmtp command line report error
+			if [ "$RC" != "0" ]; then
+				echo "554 Transaction Failed"
+				log err -e $RC "[SMTP] mail for [ $from ] failed; failed to record command line"
+				rm -f "${FQP}.*"
+			fi
+			
+			# We're finished getting data; now we'll send the mail and wait for
+			# sender to end dialogue or start a new transaction
+			state=postdata
+
+			# If we want SMTP mail to be held until we manually release it...
+			if [ "$MSMTP_HOLD_SMTP_MAIL" = "true" ]; then
+				touch "${FQP}.hold"
+			fi
+	
+			send_queued_mail "${ID}"
+			RC=$?
+
+			# Success is fine, so is temporary failure because that means we've
+			# queued and will retry later.
+			if [ "$RC" = "0" ] || [ "$RC" = "75" ]; then
+				echo "250 Ok"
+				log info "[SMTP] Message sent or queued"
+			else
+				# Otherwise report tranaction failure
+				echo "554 Transaction failed"
+				log err -e $RC "[SMTP] Transaction failed"
+			fi
+                fi
+		continue			# next line
+        	IFS=$'\n'
+	done
+  	IFS="$oIFS"
+}
+
+##
+## Sendmail command line queue and send
+## 
+## $@: paramters to pass to msmtp
+##
+sendmail_queue() {
+	local RC PARAMS="$*"
+	make_id				# make base queue filename id for this mail
+
+	# write mail body text to queue .mail file
+	if [ "$IGNORE_DOTS" = "true" ]; then
+		cat > "${FQP}.mail"
+		RC=$?
+	else
+		sed -e '1,/^\.$/p
+d
+$d
+s/^\.\(.+\)$/\1/' > "${FQP}.mail"
+    RC=$?
+	fi
+
+	if [ ! -s "${FQP}.mail" ]; then
+		# If there was no mail body assume caller didn't actually mean to send mail, even
+		# if  cat/sed ended with error due to caller terminating before sending anything
+		log debug "[sendmail] Empty body"
+		rm -f "${FQP}".*
+		return 0
+	fi
+
+	[ "$RC" != "0" ] && {
+		log err -e "$RC" "creating mail body file [ ${FQP}.mail ] : failed"	# test for error
+		return $RC
+	}
+
+	# If we want command line mail to be held until we manually release it...
+	if [ "$MSMTP_HOLD_CLI_MAIL" = "true" ]; then
+		touch "${FQP}.hold"
+	fi
+
+	send_mail "$PARAMS"			# queue and send the mail if possible
+	RC=$?
+	return $RC
+}
+
+#
+## -- entry point
+#
+
+[ -z "$IGNORE_DOTS" ] && IGNORE_DOTS=false
+PARAMS=""
+RC=0
+
+if [ "$1" = "-lq" ]; then
+	shift
+	$@
+	exit $?
+fi
+
+while [ -n "$1" ]; do
+	OP="$1"
+	shift
+	case "$OP" in
+	"-bp")
+		exec $MSMTPQ_NG_QUEUE "-p $@"	# List queue (with any additional parameters)
+		;;
+	"-bs")
+		lock_queue -lq smtp_server	# Act as SMTP (RFC821) server on stdin/stdout
+		exit 0
+		;;
+	 "-i")
+		IGNORE_DOTS=true
+		;;
+	 "-q")
+		lock_queue -lq run_queue
+		exit 0
+		;;
+	"-qI")
+		lock_queue -lq send_queued_mail "$@"
+		RC=$?
+		exit $RC
+		;;
+	"--help")
+		usage
+		exit 1
+		;;
+	*)
+		if [ -z "$PARAMS" ];  then
+			PARAMS="$OP"
+		else
+			PARAMS="$PARAMS"" ""$OP"
+		fi
+		;;
+	esac
+done
+
+export IGNORE_DOTS
+lock_queue -lq sendmail_queue "$PARAMS"

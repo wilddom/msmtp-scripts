@@ -1,0 +1,9 @@
+#!/bin/sh
+
+#Q=/var/spool/msmtp
+#LOG=syslog
+#MSMTP_LOG_UMASK=057
+#MSMTP_QUEUE_QUIET=true
+#MSMTP_IGNORE_NO_RECIPIENTS=true
+#MSMTP_SEND_DELAY=0
+#MSMTPQ_NG=msmtpq-ng

@@ -1,0 +1,14 @@
+[Unit]
+Description=Accept SMTP connections and send them to sendmail -bs on stdin/stdout
+Requires=sendmail-bs.socket
+
+[Service]
+ExecStart=/usr/sbin/sendmail -bs
+User=msmtp
+Group=msmtp
+StandardInput=null
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+Also=sendmail-bs.socket

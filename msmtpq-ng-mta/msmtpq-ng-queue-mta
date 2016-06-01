@@ -1,0 +1,55 @@
+#!/bin/sh
+
+##--------------------------------------------------------------
+##
+## msmtpq-ng-queue-mta:	A wrapper scripts for msmtpq-ng-queue for
+## 			use as sendmail/postfix compatible mailq
+##			postqueue and postsuper commands
+##
+##  Copyright (C) 2016 Daniel Dickinson
+##
+##  This program is free software: you can redistribute it and/or modify
+##  it under the terms of the GNU General Public License as published by
+##  the Free Software Foundation, either version 3 of the License, or, at
+##  your option, any later version.
+##
+##--------------------------------------------------------------
+
+## mailq
+## is only a wrapper
+## it invokes the main msmtpq-ng-queue script
+##
+## all configuration and documentation is in the msmtpq-ng-queue script
+
+## note that for 'special circumstances'
+##   (e.g. embedded systems, etc.)
+## where the msmtpq-ng-queue script itself is not on the path
+## set the environment variable MSMTPQ_NG_QUEUE to the full path
+## to msmtpq-ng-queue in /etc/msmtpq-ng-mta.rc
+## e.g. 
+## MSMTPQ_NG_QUEUE=/path/to/msmtpq-ng-queue
+
+MSMTP_OVERRIDE_CONF=/etc/msmtpq-ng-mta.rc
+export MSMTP_OVERRIDE_CONF
+
+if [ "$MSMTP_MTA_SKIP_CONF" != "true" ]; then
+	[ -r /etc/msmtpq-ng-mta.rc ] && . /etc/msmtpq-ng-mta.rc
+	[ -r ~/.msmtpq-ng-mta.rc ] && . ~/.msmtpq-ng-mta.rc
+fi
+
+[ -z "$LOG" ] && LOG=syslog
+[ -z "$Q" ] && Q=/var/spool/msmtp
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=057
+[ -z "$MSMTP_QUEUE_QUIET" ] && MSMTP_QUEUE_QUIET=true
+[ -z "$MSMTP_IGNORE_NO_RECIPIENTS" ] && MSMTP_IGNORE_NO_RECIPIENTS=true
+[ -z "$MSMTPQ_NG_QUEUE" ] && MSMTPQ_NG_QUEUE=msmtpq-ng-queue
+
+export LOG Q MSMTP_LOG_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG_QUEUE
+
+[ -x "$MSMTPQ_NG_QUEUE" ] && exec "$MSMTPQ_NG_QUEUE" "$@"
+[ -n "$(which "$MSMTPQ_NG_QUEUE")" ]  && exec msmtpq-ng-queue "$@"
+
+echo "mailq: unable to find msmtpq-ng-queue" >&2
+# From sysexits.h: EX_OSFILE
+exit 72
+

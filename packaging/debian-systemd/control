@@ -1,0 +1,59 @@
+Source: msmtp-scripts
+Section: mail
+Priority: extra
+Maintainer: Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
+Standards-Version: 3.9.6
+Homepage: http://msmtp-scripts.sourceforge.net/
+
+Package: msmtpq-ng
+Architecture: all
+Depends:
+    ${misc:Depends},
+    msmtp | msmtp-gnome
+Description: queueing wrapper around msmtp light SMTP client
+ msmtpq-ng and msmtpq-ng-queue are wrapper scripts around msmtp
+ light SMTP client that allows adds queueing of email, for
+ example in the case of failure to send the mail or due to lack
+ of network connection. 
+
+Package: msmtpq-ng-mta
+Architecture: all
+Depends:
+    ${misc:Depends},
+    msmtpq-ng
+Provides: mail-transport-agent
+Conflicts: mail-transport-agent
+Replaces: mail-transport-agent
+Description: queuing wrapper around msmtpq light SMTP client as MTA
+ msmtpq-ng and msmtpq-ng-queue are wrapper scripts around msmtp light
+ SMTP client that allow adds queueing of (and queue management for)
+ email, for example in the case of failure to send the mail or due to
+ lack of network connection. 
+ .
+ This package uses msmtpq-ng as the system MTA (sendmail command),
+
+Package: msmtpq-ng-smtpd
+Architecture: all
+Depends:
+    ${misc:Depends},
+    msmtpq-ng-mta
+    systemd
+Description: Uses systemd sockets to add network functionality to
+ msmtpq-ng-mta's SMTP (RFC821) mode on stdin/stdout,
+ which allows it to act as an SMTP server.
+ We have a separate package that instead depends some inetd for
+ those who don't want the systemd dependency.
+ .
+ This package uses msmtpq-ng-mta as the system MTA 
+
+Package: msmtpq-ng-smtpd-inetd
+Architecture: all
+Depends:
+    ${misc:Depends},
+    msmtpq-ng-mta
+    inet-superserver
+Description: Uses some inetd to add network functionality to
+ msmtpq-ng-mta's SMTP (RFC821) mode on stdin/stdout,
+ which allows it to act as an SMTP server.
+ .
+ This package uses msmtpq-ng-mta as the system MTA 

@@ -2,7 +2,7 @@
 
 VERSION=1.0.0
 
-distfiles = AUTHORS COPYING NEWS README THANKS doc msmtpq msmtpq-mta
+distfiles = AUTHORS COPYING NEWS README THANKS doc msmtpq-ng msmtpq-ng-mta
 
 all: dist-gzip
 

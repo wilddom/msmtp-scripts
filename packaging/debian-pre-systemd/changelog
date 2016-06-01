@@ -1,0 +1,5 @@
+msmtp-scripts (1:1.0.0-1) precise; urgency=low
+
+  * Initial Release.
+
+ -- Daniel Dickinson <ubuntu@daniel.thecshore.com>  Thu, 26 May 2016 05:15:12 -0400

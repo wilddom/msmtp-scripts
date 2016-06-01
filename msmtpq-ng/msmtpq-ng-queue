@@ -1,0 +1,315 @@
+#!/bin/sh
+
+##--------------------------------------------------------------
+##
+##  msmtpq-ng-queue: List and manage msmtpq-ng queue
+##		     Based on msmtpq by Chris Gianniotis which
+##		     based on the concept from Martin Lambers
+##		     msmtpqueue scripts.
+##                   Rewritten by Daniel Dickinson
+##  Copyright (C) 2008 - 2015 Chris Gianniotis
+##  Copyright (C) 2016 Daniel Dickinson
+##
+##  This program is free software: you can redistribute it and/or modify
+##  it under the terms of the GNU General Public License as published by
+##  the Free Software Foundation, either version 3 of the License, or, at
+##  your option, any later version.
+##
+##--------------------------------------------------------------
+##
+## msmtpq-ng-queue is a sendmail mailq compatible queue lister
+## for msmtpq queues, with the addition of some queue management
+## commands from Posfix's postsuper.
+
+dsp() {
+	local L
+	for L; do
+		[ -n "$L" ] && echo "  $L" || echo
+	done
+}
+
+err() {
+	dsp '' "$@" ''
+	exit 1
+}
+
+# Configuration files
+#   System-wide defaults in /etc/msmtpq-ng.rc
+#   User settings in ~/.msmtpq-ng.rc
+
+if [ "$MSMTP_SKIP_CONF" != "true" ]; then
+	[ -r "/etc/msmtpq-ng.rc" ] && . /etc/msmtpq-ng.rc
+	[ -r "~/.msmtpq-ng.rc" ] && . ~/.msmtpq-ng.rc
+fi
+
+if [ -n "$MSMTP_OVERRIDE_CONF" ]; then
+	. "$MSMTP_OVERRIDE_CONF"
+	export MSMTP_OVERRIDE_CON
+fi
+
+## Path to msmtpq-ng - only needed if not in PATH
+[ -z "$MSMTPQ_NG" ] && MSMTPQ_NG=msmtpq-ng
+[ -n "$(which "$MSMTPQ_NG")" ] || [ -x "$MSMTPQ_NG" ] || {
+	log -e 1 "msmtpq-ng-queue: Unable to find msmtpq-ng"
+	exit 1
+}
+
+## set the queue var to the location of the msmtp queue directory
+##   if the queue dir doesn't yet exist, create it (0700)
+##     before using this script
+##       e.g. ( mkdir msmtp.queue      )
+##            ( chmod 0700 msmtp.queue )
+##
+## the queue dir - modify this to reflect where you'd like it to be  (no quotes !!)
+[ -z "$Q" ] && Q=~/.msmtp.queue
+# if not present - complain ; quit
+[ -d "$Q" ] || \
+	err '' "msmtpq-ng-queue : can't find msmtp queue directory [ $Q ]" ''
+
+## set the queue log file var to the location of the msmtp queue log file
+##   where it is or where you'd like it to be
+##     ( note that the LOG setting could be the same as the )
+##     ( 'logfile' setting in .msmtprc - but there may be   )
+##     ( some advantage in keeping the two logs separate    )
+##   if you don't want the log at all unset (comment out) this var
+##     LOG=~/log/msmtp.queue.log  -->  #LOG=~/log/msmtp.queue.log
+##     (doing so would be inadvisable under most conditions, however)
+##
+## the queue log file - modify (or comment out) to taste  (but no quotes !!)
+[ -z "$LOG" ] && LOG=~/log/msmtp.queue.log
+
+## the lock directory
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock
+
+## Secure log and spool settings
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
+
+## Only send / display messages marked hold than number of seconds
+[ -z "$MSMTP_SEND_DELAY" ] && MSMTP_SEND_DELAY=0
+
+LOCK_CMD=flock			# Default to flock
+
+[ -z "$(which flock)" ] && LOCK_CMD=lock		# If we don't have flock try busybox lock
+[ -z "$(which "$LOCK_CMD")" ] && {
+	log -e 72 "   msmtpq-ng: Unable to find lock command"
+	exit 72						# Exit with EX_OSFILE
+}
+
+## write/remove queue lockfile on forced termination
+on_exit() {                          # unlock the queue on exit if the lock was set here
+	local LOK="${MSMTP_LOCK_DIR}/msmtpq-ng.lock"	# lock file name
+	if [ "$(basename $LOCK_CMD)" = "lock" ]; then
+		[ -n "$LKD" ] && lock -u "$LOK" && rm -f "$LOK"
+	fi
+}
+
+trap on_exit INT TERM EXIT				# run 'on_exit' on exit
+
+umask $MSMTP_UMASK
+
+usage() {
+	echo "$(basename $0): [options]"
+	echo ""
+	echo "no options	List queue"
+	echo "-f		Flush queue"
+	echo "-h <ID>		Put message with ID <ID> on hold (ALL for all)"
+	echo "-H <ID>		Take message with ID <ID> off hold (ALL for all)"
+	echo "-i <ID>		Flush message with ID <ID>"
+	echo "-d <ID>		Purge message with ID <ID> (ALL for all)"
+	echo "--help		This message"
+	exit 1
+}
+
+## make an entry to the queue log file, possibly an error
+##   (log queue changes only ; not interactive chatter)
+## usage : log [ -e errcode ] msg [ msg ... ]
+##  opts : -e <exit code>  an error ; log msg including error code
+## display msg to user, as well
+##
+log() {
+	# time stamp prefix - "2008 13 Mar 03:59:45 "
+	local ARG RC PFX="$('date' +'%Y %d %b %H:%M:%S')"
+	if [ "$1" = '-e' ] ; then				# there's an error exit code
+		RC="$2"						# take it
+		shift 2						# shift opt & its arg off
+	fi
+
+	[ "$MSMTP_QUEUE_QUIET" != "true" ] && dsp "$@"		# display msg to user, as well as logging it
+
+	if [ -n "$RC" ] && [ "$RC" != "0" ]; then		# an error ; leave w/error return
+		EXITCODE="exit code = $RC"			# exit code for log
+	else
+		EXITCODE=""
+	fi
+
+	if [ -n "$LOG" ] ; then					# log is defined and in use
+		for ARG ; do					# each msg line out
+			if [ -n "$ARG" ] || [ -n "$EXITCODE" ]; then
+				umask $MSMTP_LOG_UMASK
+				echo "$PFX : $ARG $EXITCODE" >> "$LOG"	# line has content ; send it to log
+				umask $MSMTP_UMASK
+			fi
+		done
+	fi
+
+}
+
+#
+# Prevent multiple process from access queue at once
+# 
+# $@: Command and paramters to execute inside the lock
+#
+lock_queue() {
+	local LOK="${MSMTP_LOCK_DIR}/msmtpq-ng.lock"	# lock file name
+	local MAX=240 SEC=0 RC				# max seconds to gain a lock ; seconds waiting
+
+	if [ "$LOCK_CMD" = "flock" ]; then		# flock makes life easy
+		flock -w $MAX "$LOK" "$0" "$@"		# execute commands inside flock
+		RC=$?
+		if [ "$RC" = "1" ]; then
+			# Couldn't acquire lock
+			log -e 71 "cannot use queue $Q : waited $MAX seconds to" \
+				"  acquire lock [ $LOK ]; giving up" \
+				'if you are certain that no other instance of this script' \
+				"  is running, then 'rm -f' the lock file manually" ''
+        		exit 71				# exit with EX_OSERR
+    		fi
+		rm -f "$LOK"				# make sure we don't have file with permissions
+							# that blocks others users from locking
+		return $RC				# return exit code of command
+	else						# busybox lock
+		touch "$LOK" 2>/dev/null
+		$LOCK_CMD -n "$LOK" && LKD='t'
+		while [ -z "$LKD" ] && [ $SEC -lt $MAX ]; do	# lock file present
+			sleep 1					# wait a second
+			SEC=$((SEC + 1))			# accumulate seconds
+			touch "$LOK" 2>/dev/null
+			$LOCK_CMD -n "$LOK" && LKD='t'
+		done						# try again while locked for MAX secs
+		[ -z "$LKD" ] && {
+ 			# lock file still there and locked
+			log -e 71 "cannot use queue $Q : waited $MAX seconds for" \
+				"  lockdir [ $LOK ] to vanish ; giving up" \
+				'if you are certain that no other instance of this script' \
+				"  is running, then 'rmdir' the lock dir manually" ''
+			exit 71					# exit with EX_OSERR
+		}
+		$0 $@						# Execute command
+		RC=$?
+		$LOCK_CMD -u "$LOK"
+		rm -f "$LOK"				# make sure we don't have file with permissions
+		return $RC
+	fi
+}
+
+list_queue() {
+	local LST="$(ls -A "$Q"/*.msmtp 2>/dev/null)"
+	local CNT=0 ID SIZE TIME SENDER RECIPIENT
+
+	for mail in $LST; do
+		if [ -r "$mail" ]; then
+			CNT=$((CNT + 1))
+		fi
+	done
+	echo "               $Q ($CNT requests)"
+	echo "----Q-ID------ --Size-- -----Q-Time----- ----------Sender/Recipient----------"
+	for mail in $LST; do
+		[ ! -r "$mail" ] && continue
+		ID="$(basename "$mail" .msmtp)"
+		if [  -e "${Q}/${ID}.hold" ]; then
+ 			if [ "$(($(date +%s -r "${Q}/${ID}.mail" 2>/dev/null) + $MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
+				STATUS="-"
+			else
+				STATUS="!"
+			fi
+		else
+			STATUS="*"
+		fi
+		SIZE="$(ls -l "$mail"|awk '{ print $5 }')"
+		TIME="$(date +"%a %b %d %H:%M" -r "${Q}/${ID}.mail" 2>/dev/null)"
+		SENDER="$(sed -e 's/^.*-f \([^ ][^ ]*\) .*$/\1/' "${Q}/${ID}.msmtp" 2>/dev/null)"
+		RECIPIENT="$(sed -e 's/^.* -- \([^ ][^ ]*\) *.*$/\1/' "${Q}/${ID}.msmtp" 2>/dev/null)"
+		echo "${ID}${STATUS} $(printf "%8d" ${SIZE}) ${TIME} ${SENDER}"
+		echo "               $(cat ${Q}/${ID}.msg 2>/dev/null)"
+		echo "                                         ${RECIPIENT}"
+	done
+	echo "               Total requests: $CNT"
+}
+
+hold_message() {
+	if [ "$1" != "ALL" ]; then
+		touch "$Q/$1".hold
+	else
+	 	local LST="$(ls -A "$Q/*.mail 2>/dev/null")"
+		for mail in "$LST"; do
+			ID="$(basename "$mail" .mail)"
+			touch "$Q/$ID".hold
+		done
+
+	fi
+}
+
+unhold_message() {
+	if [ "$1" != "ALL" ]; then
+		rm -f "$Q/$1".hold
+	else
+		rm -f "$Q"/*.hold
+	fi
+}
+
+purge_message() {
+	if [ "$1" != "ALL" ]; then
+		rm -f "$Q/$1".*
+	else
+		rm -f "$Q"/*
+	fi
+}
+
+RC=0
+FUNC=""
+
+if [ "$1" = "-lq" ]; then
+	shift
+	$@
+	exit $?
+fi
+
+case "$1" in
+"")
+	lock_queue -lq list_queue
+	RC=$?
+	;;
+"-f")
+	exec "$MSMTPQ_NG -q"
+	;;
+"-h")
+	ID="$2"
+	shift 2
+	lock_queue -lq hold_message "$ID"
+	RC=$?
+	;;
+"-H")
+	ID="$2"
+	shift 2
+	lock_queue -lq unhold_mesage "$ID"
+	RC=$?
+	;;
+"-i")
+	ID="$2"
+	shift 2
+	exec "$MSMTPQ_NG -qI $ID"
+	;;
+"-d")
+	ID="$2"
+	shift 2
+	lock_queue -lq purge_message "$ID"
+	RC=$?
+	;;
+"--help")
+	usage
+	;;
+esac
+
+# Simply ignore commands we don't understand
+exit $RC

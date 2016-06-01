@@ -1,0 +1,62 @@
+.\" -*-nroff-*-
+.\"
+.\" Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
+.\" 2015, 2016
+.\" Martin Lambers
+.\" Copyright (C) 2011
+.\" Scott Shumate
+.\" Copyright (C) 2016
+.\" Daniel Dickinson
+.\"
+.\" Permission is granted to copy, distribute and/or modify this document
+.\" under the terms of the GNU Free Documentation License, Version 1.2 or
+.\" any later version published by the Free Software Foundation; with no
+.\" Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+.TH MSMTP-NG-QUEUE 1 2016-06
+.SH NAME
+msmtpq-ng-queue \- Queue management for msmtpq-ng
+.SH SYNOPSIS
+.IP "msmtpq-ng-queue [option...]"
+.SH DESCRIPTION
+msmtpq-ng-queue contains a sendmail/postfix compatible subset of
+the mailq command (sendmail -bp), postqueue, and postsuper, in
+order to support tools which will work with both msmtpq-ng and
+postfix for the purposes of easy mail queue management.
+.br
+.br
+.SH EXIT STATUS
+The standard sendmail exit status codes are used, as defined in sysexits.h.
+.SH OPTIONS
+They are compatible with sendmail and postfix where appropriate.
+.IP "\fBGeneral options\fP"
+.IP "No options"
+List all messages in queue in mailq-compatible format.  Also can
+be achieved via
+.B msmtpq-ng -bp
+.IP "\--help"
+Print help.
+.IP "\-f"
+Attempt to deliver all messages in queue (flush queue)
+.IP "\-h <id>"
+Put message <id> on hold or ALL for all.
+.IP "\-H <id>"
+Take message <id> off hold or ALL for all.
+.IP "\-i <id>"
+Flush message <id> from queue, if it can be delivered.
+.IP "\-d <id>"
+Delete message <id> from queue, or ALL for all.
+.SH FILES
+.IP "/etc/msmtpq-ng.rc"
+System configuration file.
+.IP "~/.msmtpq-ng.rc"
+User configuration file.
+.SH AUTHORS
+msmtp-ng-queue was written by Daniel Dickinson, based msmtpq by
+Chris Gianiotti which in turn was inspired by the msmtpqueue scripts
+by Martin Lambers <marlam@marlam.de>.
+.SH SEE ALSO
+.BR msmtpq-ng (1),
+.BR sendmail (8),
+.BR mailq (1),
+.BR postqueue(1),
+.BR postsuper(1)

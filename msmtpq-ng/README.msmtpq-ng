@@ -1,0 +1,121 @@
+
+msmtpq-ng is a rewrite of Chris Gianniotis's msmtpq scrtips which is
+turn based on the scripts comprising part of Martin Lambers'
+msmtpqueue package ; it attempts be useful to msmtp by holding mail sent
+by an MUA when a system, e.g. a laptop, is not connected to the net ;
+or of mail delivery fails.  Queued mails are held as files in a user
+defined and created queue directory ; when the machine is connected
+all mail can be sent directly out (provided a queue flush command
+is send, e.g. via cronjob, or on network up hook).
+
+In addition is able to be able to be used as 'sendmail' command.
+A subset of the RFC821 (SMTP) is also implemented that should be
+sufficient for compliant clients (the SMTP implementation only omits
+certain SHOULD items that compliant clients SHOULD be able live
+without).  The network communications on e.g. port 25 need to be
+handled by something like inetd, xinetd, or systemd socket unit,
+with the protocol being implmented towards/from the script via
+stdin and stdout.
+
+
+  msmtpq-ng     accepts mail input from an MUA (e.g. mutt) and sends it
+                directly out via msmtp if possible, or queues it if not.
+		This may also be used as an alias for the sendmail
+		command although in that case the msmtpq-ng-mta is
+		recommended to set some defaults useful in that case.
+
+  msmtpq-ng-queue Also called by msmtpq-ng when is called with -bp argument
+		 (for sendmail compability).  It exposes routines for queue
+                 management and maintenance, that is, for queue display,
+                 queue run (flush), mail purge from the queue, etc.
+
+msmtpq-ng-queue is compatible with the mailq command and can
+be used with some additions compatible with postfix's postsuper (for
+releasiing and removing mail).
+
+msmtpq-ng has the option of automatically holding mail until manually
+released (optionally with a mandatory delay between queueing and
+avaaiability for releasing).
+
+msmtpq-ng when called directly, has no interactive user input whatever
+- it simply takes its input from the MUA and outputs directly to msmtp
+(or to the queue).  If used with the -bp option msmtpq-ng-queue is
+called.  If used with the -bs option it implements a subset of RFC821
+on stdin and stdout (for use with a network frontend like to xinetd
+for systemd socket as an SMTP server).  If used with -q option attempts
+to send all non-held mail in the queue.
+
+Credit for previous implmentation goes to Chis Gianniotis, he gives
+credit to Martin Lambers for the idea of the queue ; any bugs,
+design errors, oversights, suggestions for improvement, etc. belong to
+me (Daniel Dickinson <msmtp-scripts@daniel.theshore.com); all feedback
+is welcome .
+
+
+Installation :
+------------
+
+copy msmtpq-ng and msmtp-ng-queue to whatever location is best for you
+(I use /usr/local/bin) ; the directory chosen should be on the path
+
+replace the msmtp invocation in your mail client with msmtpq-ng ; e.g. for
+mutt : 'set sendmail = /path/to/msmtpq-ng'
+
+msmtpq-ng will then take care of the management and routing of outgoing
+mail ; normally sending a mail is nearly instantaneous, but a very long
+mail (e.g. one with large attachments) can take some time to make its way
+through ; therefore it's wise to have the MUA background the process if
+possible
+
+In the case of mutt, in addition to the above setting,
+
+'set sendmail = /path/to/msmtpq-ng'
+
+set, also,
+
+'set sendmail_wait = -1'
+
+mutt then backgrounds the send and watches for a return code & message
+from msmtpq-ng
+
+
+Configuration :
+-------------
+
+in summary :
+  copy the msmtpq-ng and msmtp-ng-queue scripts to the directory where
+    they will live be certain that they are executable
+      ( chmod +x msmtpq-ng msmtpq-ng-queue )
+  create the queue dir (0700) if necessary
+    ( mkdir -p /path/to/queue/dir )
+    ( chmod 0700 /path/to/queue/dir )
+  create or copy /etc/msmtpq-ng.rc or ~/.msmtpq-ng.rc
+  for other MUAs -
+    set the mta to '/path/to/msmtpq-ng', as above and
+    background its execution, if possible
+
+msmtpq-ng is entirely self contained ; beyond keeping an eye on the queue
+  and queue logs it should require no admin or user attention once set up
+
+log(s) rotation :
+
+On a Debian or Debian-based system (e.g. Ubuntu or Mint) a file can be
+created in /etc/logrotate.d (named, e.g. 'msmtpq-ng') that configures
+logrotate to compress and rotate both the msmtp logs and msmtpq-ng queue
+logs.
+
+Suggested contents :
+#--------------------------------------------------
+/home/xyz/log/msmtp.log /home/xyz/log/msmtp.queue.log {
+  rotate 9999
+  weekly
+  compress
+  notifempty
+  missingok
+}
+#--------------------------------------------------
+
+adjust it to your queue and log location(s) and name(s) and
+see the logrotate man page for further config information ;
+it should be trivial to adapt to other systems
+

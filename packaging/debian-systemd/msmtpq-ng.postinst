@@ -1,0 +1,48 @@
+#!/bin/sh
+set -e
+
+if [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+fi
+
+#DEBHELPER#
+
+write_config () {
+	rm -f /etc/msmtpq-ng.rc.new
+	cp /etc/msmtpq-ng.rc /etc/msmtpq-ng.rc.new
+	touch /etc/msmtpq-ng.rc.new
+
+	db_get msmtpq-ng/send_delay
+	if [ "x$RET" != "x" ]; then
+		if grep -q '^(#)?MSMTP_SEND_DELAY'; then
+			sed -i -e "s/^\\(#\\)?MSMTP_SEND_DELAY=.*/MSMTP_SEND_DELAY=$RET/" /etc/msmtpq-ng.rc.new
+		else
+			sed -i -e "$a\\MSMTP_SEND_DELAY=$RET" /etc/msmtpq-ng.rc.new
+		fi
+	fi
+
+	db_get msmtpq-ng/maximum_queue_lifetime
+	if [ "x$RET" != "x" ]; then
+		if grep -q '^(#)?MSMTP_MAXIUMUM_QUEUE_LIFETIME'; then
+			sed -i -e "s/^\\(#\\)?MSMTP_MAXIMUM_QUEUE_LIFETIME=.*/MSMTP_MAXIMUM_QUEUE_LIFETIME=$RET/" /etc/msmtpq-ng.rc.new
+		else
+			sed -i -e "$a\\MSMTP_MAXIMUM_QUEUE_LIFETIME=$RET" /etc/msmtpq-ng.rc.new
+		fi
+	fi
+
+case $1 in
+	configure)
+		write_config
+		if [ -f /etc/msmtpq-ng.rc ]; then
+			ucf --debconf-ok /etc/msmtpq-ng.rc.new /etc/msmtpq-ng.rc
+				rm -f /etc/msmtpq-ng.rc.new
+			else
+				mv /etc/msmtpq-ng.new /etc/msmtpq-ng.new
+			fi
+		fi
+		;;
+	*)
+		exit 0
+		;;
+esac
+

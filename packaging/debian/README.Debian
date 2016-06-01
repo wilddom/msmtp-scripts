@@ -1,8 +1,0 @@
-msmtp-scripts as a Mail Transport Agent
-=======================================
-
-It is possible to use msmtp as a MTA (like postfix, exim, etc.) by installing
-the package msmtp-mta. It will provide the basic features required to be a MTA
-(/usr/{sbin,lib}/sendmail, newaliases, etc.).
-
-The msmtpq-mta package is not (and will never be) full featured MTA.
