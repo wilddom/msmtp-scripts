@@ -2,16 +2,16 @@
 
 VERSION=1.0.0
 
-distfiles = AUTHORS COPYING NEWS README THANKS doc msmtpq-ng msmtpq-ng-mta
+distfiles = AUTHORS COPYING NEWS README THANKS doc msmtpq-ng msmtpq-ng-mta packaging
 
 all: dist-gzip
 
 dist-gzip:
 	rm -rf tmp
-	mkdir tmp
-	git log --date=iso --stat >tmp/ChangeLog
-	cp -r $(distfiles) tmp/
-	tar -C tmp -cvzf msmtp-scripts-$(VERSION).tar.gz .
+	mkdir -p tmp/msmtp-scripts-$(VERSION)
+	git log --date=iso --stat >tmp/msmtp-scripts-$(VERSION)/ChangeLog
+	cp -r $(distfiles) tmp/msmtp-scripts-$(VERSION)/
+	tar -C tmp -cvzf msmtp-scripts-$(VERSION).tar.gz msmtp-scripts-$(VERSION)
 
 clean:
 	rm -f msmtp-scripts-*.tar.gz

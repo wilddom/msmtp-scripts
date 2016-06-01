@@ -1,1 +1,1 @@
-msmtpq-ng-mta/sendmail-bs.xinetd etc/xinetd.d/sendmail-bs
+msmtpq-ng-mta/xinetd.d/sendmail-bs etc/xinetd.d/

@@ -1,4 +1,4 @@
-msmtp-scripts (1:1.0.0-1) xenia; urgency=low
+msmtp-scripts (1.0.0-1) xenial; urgency=low
 
   * Initial Release.
 
