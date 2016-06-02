@@ -1,3 +1,4 @@
-msmtpq-ng-mta/msmtpq-ng-mta usr/bin
+msmtpq-ng-mta/msmtpq-ng-mta usr/sbin
+msmtpq-ng-mta/msmtpq-ng-queue-mta usr/sbin
 msmtpq-ng-mta/cron.hourly/msmtpq-ng-mta etc/cron.hourly
 msmtpq-ng-mta/msmtpq-ng-mta.rc etc
