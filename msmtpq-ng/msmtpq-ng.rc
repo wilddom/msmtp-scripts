@@ -1,6 +1,6 @@
 #Q=~/msmtp.queue
 #LOG=~/log/.msmtp.queue.log
-#MAXLOGLEVEL=8
+#MAXLOGLEVEL=7
 #MSMTP_LOCKDIR=/var/lock
 #EMAIL_CONN_TEST=n
 #EMAIL_CONN_TEST_SITE=debian.org

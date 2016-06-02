@@ -102,7 +102,7 @@ fi
 ##
 ## the queue log file - modify (or comment out) to taste  (but no quotes !!)
 [ -z "$LOG" ] && LOG=~/log/msmtp.queue.log
-[ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=8		# Default to showing all log messages
+[ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=7		# Default to not displaying debug log messages
 
 ## Secure log and spool settings
 [ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
@@ -189,7 +189,8 @@ log() {
 
 	if [ "$LOG" != "syslog" ]; then
 		# time stamp prefix - "2008 13 Mar 03:59:45 "
-		PFX="$('date' +'%Y %d %b %H:%M:%S')"
+		TIMEPFX="[$('date' +'%Y %d %b %H:%M:%S')] msmtpq-ng: "
+		PFX="msmtpq-ng: "
 		case "$PRI" in
 		emerge)
 			PFX="$PFX [EMERGENCY]"
@@ -234,31 +235,78 @@ log() {
 		shift 2						# shift opt & its arg off
 	fi
 
-	[ "$MSMTP_QUEUE_QUIET" != "true" ] && dsp "$@"		# display msg to user, as well as logging it
-
-	if [ -n "$RC" ] && [ "$RC" != "0" ]; then		# an error ; leave w/error return
-		EXITCODE="exit code = $RC"			# exit code for log
-	else
+	case "$RC" in
+	"64")
+		EXITCODE="EX_USAGE: error in command line"
+		;;
+	"65")
+		EXITCODE="EX_DATA: data format error"
+		;;
+	"66")
+		EXITCODE="EX_NOINPUT: cannot open input"
+		;;
+	"67")
+		EXITCODE="EX_NOUSER: addressee unknown"
+		;;
+	"68")
+		EXITCODE="EX_NOHOST: hostname not known"
+		;;
+	"69")
+		EXITCODE="EX_UNAVAILABLE: service unavailable"
+		;;
+	"70")
+		EXITCODE="EX_SOFTWARE: internal software error"
+		;;
+	"71")
+		EXITCODE="EX_OSERR: system error"
+		;;
+	"72")
+		EXITCODE="EX_OSFILE: critical os file missing"
+		;;
+	"73")
+		EXITCODE="EX_CANTCREAT: can't create (user) output file"
+		;;
+	"74")
+		EXITCODE="EX_IOERR: i/o error"
+		;;
+	"75")
+		EXITCODE="EX_TEMPFAIL: temporary failure"
+		;;
+	"76")
+		EXITCODE="EX_PROTOCOL: remote error in protocol"
+		;;
+	"77")
+		EXITCODE="EX_NOPERM: permission denied"
+		;;
+	"78")
+		EXITCODE="EX_CONFIG: configuration error"
+		;;
+	""|"0")
 		EXITCODE=""
-	fi
-
-	ARG="$@"
+		;;
+	*)
+		EXITCODE="unknown exit code = $RC"		# exit code for log
+		;;
+	esac
 
 	if [ -n "$EXITCODE" ]; then
-		ARG="$ARG $EXITICODE"
+		ARG="$@"" ""$EXITCODE"
+	else
+		ARG="$@"
 	fi
 
-	if [ -n "$LOG" ] && [ "$LOG" != "syslog" ]; then	# log is defined and in use
-		for ARG ; do					# each msg line out
-			if [ -n "$ARG" ]; then
-				umask $MSMTP_LOG_UMASK
-				echo "$PFX : $ARG $EXITCODE" >> "$LOG"	# line has content ; send it to log
-				umask $MSMTP_UMASK
-			fi
-		done
-	elif [ "$LOG" = "syslog" ]; then
-		echo "$ARG" | logger -i -t msmtpq-ng -p mail.$PRI
+
+	umask $MSMTP_LOG_UMASK
+	if [ -n "$ARG" ]; then
+		[ "$MSMTP_QUEUE_QUIET" != "true" ] && \
+			dsp "$PFX $ARG"				# display msg to user, as well as logging it
+		if [ -n "$LOG" ] && [ "$LOG" != "syslog" ]; then	# log is defined and in use
+			echo "$TIMEPFX $PFX : $ARG" >> "$LOG"	# line has content ; send it to log
+		elif [ "$LOG" = "syslog" ]; then
+			echo "$ARG" | logger -i -t msmtpq-ng -p mail.$PRI
+		fi
 	fi
+	umask $MSMTP_UMASK
 
 }
 
@@ -329,8 +377,8 @@ connect_test() {
 		# must, of course, have netcat (nc) installed
 		which nc >/dev/null 2>&1 || {
 			# if not found - complain ; quit
-			log crit -e 1 "can't find netcat executable [ nc ]"
-			return 1
+			log err -e 72 "can't find netcat [ nc ]"
+			return 72
 		}
 		nc -vz $EMAIL_CONN_TEST_SITE 80 >/dev/null 2>&1 || return 1
 	elif [ "$EMAIL_CONN_TEST" = 's' ] ; then				# use sh sockets test
@@ -358,7 +406,7 @@ send_queued_mail() {
 	# Held messages may not sent until MSMTP_SEND_DELAY has elapsed
 	if [ -e "${FQP}.hold" ]; then
 		if [ "$(($(date +%s -r "${FQP}.mail" 2>/dev/null) + $MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
-			log info "mail [ $1 ] from queue; too new to unhold"
+			log info "message [ $1 ]; too new to unhold"
 			echo "Too new" >"${FQP}".msg
 			# This is temporary error, so exit with EX_TEMPFAIL
 			return 75
@@ -368,7 +416,7 @@ send_queued_mail() {
 	if [ -f "${FQP}.msmtp" ] ; then			# corresponding .msmtp file found
 		[ "$EMAIL_CONN_TEST" != 'x' ] && \
 			connect_test || {
-				log notice "mail [ $1 ] from queue ; couldn't be sent - host not connected"
+				log notice "message [ $1 ]; couldn't be sent - host not connected"
 				echo "Host not connected" >"${FQP}".msg
 				# Connetion error is temporary; exit with EX_TEMPFAIL
 				return 75
@@ -379,34 +427,33 @@ send_queued_mail() {
 		RC=$?
 		if [ "$RC" = "0" ]; then       			# this mail goes out the door
 			# log success (and maybe display)
-			log info "mail [ $1 ] from queue ; send was successful ; purged from queue"
+			log info "message [ $1 ]; send successful; purged from queue"
 			rm -f ${FQP}.*				# nuke all queue mail files
 			# If message is reaches maximum time allowed in queue
 		elif [ "$(($(date +%s -r "${FQP}.mail") + $MSMTP_MAX_QUEUE_LIFETIME))" -le "$(date +%s)" ]; then
 			# Purge it from the queue
 			rm -f "${FQP}".*
-			log warning "mail [ $1 ] exceeded queue lifetime; purged"
+			log warning "message [ $1 ] exceeded queue lifetime; purged"
 			if echo "$RETMSG" | grep -q 'no recipients found'; then
 				if [ "$MSMTP_IGNORE_NO_RECIPIENTS" != "true" ]; then
 					# Only log error if no recipients and ignoring
-					log warning "mail [ $1 ] from queue ; send failed ; no recpients"
+					log warning -e 67 "message [ $1 ]; send failed; no recpients"
 					echo "No recipients" >"${FQP}".msg
 				else
 					# If we're not ignoring it's fatal and remove the mail
-					log crit "mail [ $1 ] from queue ; send failed ; no recipients" \
-						"dequeued mail: [ $1 ]"
+					log err -e 67 "message [ $1 ]; send failed ; no recipients; dequeued mail"
 					rm -f ${FQP}.*		# nuke all queue mail files
 				fi
 			fi
 		else	# send was unsuccessful
 			# For all other errors, log it and leaved queued	
-			log err "mail [ $1 ] from queue ; send failed ; msmtp rc = $RC"
+			log err "message [ $1 ]; send failed"
 			echo "$RETMSG" >${FQP}.msg
 		fi
 		return $RC					# func returns exit code
 	else	
 		# corresponding param file not found
-		log crit "preparing to send .mail file [ $1 ] [ ${FQP}.mail ] but" \
+		log err "preparing to send .mail file [ $1 ] [ ${FQP}.mail ] but" \
 			"  corresponding .msmtp file [ ${FQP}.msmtp ] was not found in queue" \
 			'  skipping this mail ; this is worth looking into'
 		echo "Missing .msmtp file" >"${FQP}".msg
@@ -432,7 +479,8 @@ run_queue() {
 
 	# If hold only (i.e. no non-hold messages)
 	if [ "$HO" = "1" ]; then
-		[ -z "$EMAIL_QUEUE_QUIET" ] && dsp '' 'mail queue is empty (nothing to send)' ''
+		[ "$EMAIL_QUEUE_QUIET" != "true" ] && \
+			dsp '' 'mail queue is empty (nothing to send)' ''
 	fi # inform user (if not running as MTA)
 }
 
@@ -531,7 +579,7 @@ smtp_mail_from() {
 		# Bad input for MAIL FROM
 		FROM=""
 		echo "501 Syntax error in parameter or arguments"
-		log err "[SMTP] Bad line $line getting mail command"
+		log err "[SMTP] Bad MAIL FROM: $line"
 		return 1
 	fi
 }
@@ -605,7 +653,7 @@ smtp_server() {
 
 			smtp_mail_from "$line" && {
 				state=rcpt
-				log debug "[SMTP] Got MAIL FROM after DATA"
+				log debug "[SMTP] Got MAIL FROM ($FROM) after DATA"
 			}
 			continue		# next line
 		fi
@@ -629,7 +677,7 @@ smtp_server() {
 			# Bad input on RCPT TO
 			if [ -z "$newto" ]; then
 				echo "501 Syntax error in parameter or arguments"
-				log err "[SMTP] Bad line $line; invalid rcpt to"
+				log err "[SMTP] Bad RCPT TO: $line"
 				continue		# next line
 			fi
 
@@ -639,12 +687,12 @@ smtp_server() {
 				to="$to $newto"
 			fi
 			echo "250 Ok"
-			log debug "[SMTP] Got RCPT TO"
+			log debug "[SMTP] Got RCPT TO ($to)"
 			continue			# next line
 		# Got RCPT TO in at the wrong time
 		elif [ "$state" != "rcpt" ] && echo "$line" | grep -qiE "^rcpt to:<[^@]+@[^@]+>"; then
 			echo "503 Command out of sequence"
-			log err "[SMTP] Bad line $line when not expecting RCPT TO"
+			log err "[SMTP] RCPT TO: when not expecting it: $line"
 		fi
 
 		# Can do a NOOP at anytime
@@ -658,7 +706,7 @@ smtp_server() {
 		if [ "$state" = "rcpt" ] && echo "$line" | grep -qi "^data"; then
 			state=data
 			echo "354 Start of mail input; end with <CRLF>.<CRLF>"
-			log debug "[SMTP] Got DATA"
+			log debug "[SMTP] Got start DATA"
 			continue	# next line
 		fi
 
@@ -679,6 +727,7 @@ s/\r\(..*\)\r$/\1/g'|tr -d '\r')"
 				fi
 				continue 	# next line
 			fi
+			log debug "Got $(wc -c "${FQP}.mail") bytes of DATA"
 
 			# Record sender and recipients in msmtp command line form
 			echo "-f $FROM -- $to" >"${FQP}".msmtp
@@ -707,7 +756,7 @@ s/\r\(..*\)\r$/\1/g'|tr -d '\r')"
 			# queued and will retry later.
 			if [ "$RC" = "0" ] || [ "$RC" = "75" ]; then
 				echo "250 Ok"
-				log info "[SMTP] Message sent or queued"
+				log debug "[SMTP] Message sent or queued"
 			else
 				# Otherwise report tranaction failure
 				echo "554 Transaction failed"

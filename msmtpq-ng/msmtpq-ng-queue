@@ -77,6 +77,11 @@ fi
 ##
 ## the queue log file - modify (or comment out) to taste  (but no quotes !!)
 [ -z "$LOG" ] && LOG=~/log/msmtp.queue.log
+[ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=7		# Default to not displaying debug log messages
+
+## Secure log and spool settings
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
 
 ## the lock directory
 [ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock
@@ -128,31 +133,130 @@ usage() {
 ## display msg to user, as well
 ##
 log() {
-	# time stamp prefix - "2008 13 Mar 03:59:45 "
-	local ARG RC PFX="$('date' +'%Y %d %b %H:%M:%S')"
+	local ARG RC PFX PRI LOGLEVEL
+	PRI="$1"						# Log priority
+	shift
+
+	if [ "$LOG" != "syslog" ]; then
+		# time stamp prefix - "2008 13 Mar 03:59:45 "
+		TIMEPFX="[$('date' +'%Y %d %b %H:%M:%S')] msmtpq-ng: "
+		PFX="msmtpq-ng: "
+		case "$PRI" in
+		emerge)
+			PFX="$PFX [EMERGENCY]"
+			LOGLEVEL=1
+			;;
+		alert)
+			PFX="$PFX [ALERT]"
+			LOGLEVEL=2
+			;;
+		crit)
+			PFX="$PFX [CRITICAL]"
+			LOGLEVEL=3
+			;;
+		err)
+			PFX="$PFX [ERROR]"
+			LOGLEVEL=4
+			;;
+		warning)
+			PFX="$PFX [WARNING]"
+			LOGLEVEL=5
+			;;	
+		notice)
+			PFX="$PFX [NOTICE]"
+			LOGLEVEL=6
+			;;
+		info)
+			PFX="$PFX [INFO]"
+			LOGLEVEL=7
+			;;
+		debug)
+			PFX="$PFX [DEBUG]"
+			LOGLEVEL=8
+			;;
+		esac
+		if [ "$LOGLEVEL" -gt "$MAXLOGLEVEL" ]; then
+			return
+		fi
+	fi
+	
 	if [ "$1" = '-e' ] ; then				# there's an error exit code
 		RC="$2"						# take it
 		shift 2						# shift opt & its arg off
 	fi
 
-	[ "$MSMTP_QUEUE_QUIET" != "true" ] && dsp "$@"		# display msg to user, as well as logging it
-
-	if [ -n "$RC" ] && [ "$RC" != "0" ]; then		# an error ; leave w/error return
-		EXITCODE="exit code = $RC"			# exit code for log
-	else
+	case "$RC" in
+	"64")
+		EXITCODE="EX_USAGE: error in command line"
+		;;
+	"65")
+		EXITCODE="EX_DATA: data format error"
+		;;
+	"66")
+		EXITCODE="EX_NOINPUT: cannot open input"
+		;;
+	"67")
+		EXITCODE="EX_NOUSER: addressee unknown"
+		;;
+	"68")
+		EXITCODE="EX_NOHOST: hostname not known"
+		;;
+	"69")
+		EXITCODE="EX_UNAVAILABLE: service unavailable"
+		;;
+	"70")
+		EXITCODE="EX_SOFTWARE: internal software error"
+		;;
+	"71")
+		EXITCODE="EX_OSERR: system error"
+		;;
+	"72")
+		EXITCODE="EX_OSFILE: critical os file missing"
+		;;
+	"73")
+		EXITCODE="EX_CANTCREAT: can't create (user) output file"
+		;;
+	"74")
+		EXITCODE="EX_IOERR: i/o error"
+		;;
+	"75")
+		EXITCODE="EX_TEMPFAIL: temporary failure"
+		;;
+	"76")
+		EXITCODE="EX_PROTOCOL: remote error in protocol"
+		;;
+	"77")
+		EXITCODE="EX_NOPERM: permission denied"
+		;;
+	"78")
+		EXITCODE="EX_CONFIG: configuration error"
+		;;
+	""|"0")
 		EXITCODE=""
+		;;
+	*)
+		EXITCODE="unknown exit code = $RC"		# exit code for log
+		;;
+	esac
+
+	if [ -n "$EXITCODE" ]; then
+		ARG="$@"" ""$EXITCODE"
+	else
+		ARG="$@"
 	fi
 
-	if [ -n "$LOG" ] ; then					# log is defined and in use
-		for ARG ; do					# each msg line out
-			if [ -n "$ARG" ] || [ -n "$EXITCODE" ]; then
-				umask $MSMTP_LOG_UMASK
-				echo "$PFX : $ARG $EXITCODE" >> "$LOG"	# line has content ; send it to log
-				umask $MSMTP_UMASK
-			fi
-		done
-	fi
 
+	umask $MSMTP_LOG_UMASK
+	if [ -n "$ARG" ]; then
+		[ "$MSMTP_QUEUE_QUIET" != "true" ] && \
+			dsp "$PFX $ARG"				# display msg to user, as well as logging it
+		if [ -n "$LOG" ] && [ "$LOG" != "syslog" ]; then	# log is defined and in use
+			echo "$TIMEPFX $PFX : $ARG" >> "$LOG"	# line has content ; send it to log
+		elif [ "$LOG" = "syslog" ]; then
+			echo "$ARG" | logger -i -t msmtpq-ng -p mail.$PRI
+		fi
+	fi
+	umask $MSMTP_UMASK
 }
 
 #
@@ -240,11 +344,13 @@ list_queue() {
 hold_message() {
 	if [ "$1" != "ALL" ]; then
 		touch "$Q/$1".hold
+		log info "message [ $1 ] held"
 	else
 	 	local LST="$(ls -A "$Q/*.mail 2>/dev/null")"
 		for mail in "$LST"; do
 			ID="$(basename "$mail" .mail)"
 			touch "$Q/$ID".hold
+			log info "message [ $ID ] held"
 		done
 
 	fi
@@ -263,17 +369,21 @@ unhold_message() {
 		# If send delay has not yet past
 		if [ "$(($(date +%s -r "${Q}/${ID}.mail") + $MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
 			# skip this message
+			log notice "message [ $ID ] too new to release"
 			continue
 		fi
 		rm -f $hold
+		log info "message [ $ID ] released"
 	done
 }
 
 purge_message() {
 	if [ "$1" != "ALL" ]; then
 		rm -f "$Q/$1".*
+		log notice "message [ $ID ] purged"
 	else
 		rm -f "$Q"/*
+		log notice "all messages purged"
 	fi
 }
 
