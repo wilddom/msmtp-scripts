@@ -1,6 +1,6 @@
 #!/usr/bin/make
 
-VERSION=1.0.4
+VERSION=1.0.5
 
 distfiles = AUTHORS COPYING NEWS README THANKS doc msmtpq-ng msmtpq-ng-mta packaging
 
