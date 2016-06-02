@@ -417,15 +417,17 @@ send_queued_mail() {
 ## run (flush) queue
 ##
 run_queue() {
-	local M ID LST="$('ls' $Q/*.mail 2>/dev/null)" HO=1	# list of mails in queue
+	local M ID LST="$(ls "$Q"/*.mail 2>/dev/null)" HO=1	# list of mails in queue
 
 	if [ -n "$LST" ] ; then					# something in queue
-		ID="$(basename $M .mail)"
-		# Only send mail not marked hold
-		[ ! -e "${Q}/${ID}.hold" ] && {
+		for M in $LST: do
+		    ID="$(basename $M .mail)"
+		    # Only send mail not marked hold
+		    [ ! -e "${Q}/${ID}.hold" ] && {
 			send_queued_mail "$ID"			# send mail - pass {id} only
 			HO=0
-		}
+		   }
+                done
 	fi
 
 	# If hold only (i.e. no non-hold messages)
