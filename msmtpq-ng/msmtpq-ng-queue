@@ -281,7 +281,7 @@ case "$1" in
 	RC=$?
 	;;
 "-f")
-	exec "$MSMTPQ_NG -q"
+	exec $MSMTPQ_NG -q
 	;;
 "-h")
 	ID="$2"
@@ -298,7 +298,7 @@ case "$1" in
 "-i")
 	ID="$2"
 	shift 2
-	exec "$MSMTPQ_NG -qI $ID"
+	exec $MSMTPQ_NG -qI $ID
 	;;
 "-d")
 	ID="$2"
