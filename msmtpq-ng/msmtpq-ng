@@ -479,7 +479,7 @@ run_queue() {
 
 	# If hold only (i.e. no non-hold messages)
 	if [ "$HO" = "1" ]; then
-		[ "$EMAIL_QUEUE_QUIET" != "true" ] && \
+		[ "$MSMTP_QUEUE_QUIET" != "true" ] && \
 			dsp '' 'mail queue is empty (nothing to send)' ''
 	fi # inform user (if not running as MTA)
 }
