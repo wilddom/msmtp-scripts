@@ -251,11 +251,22 @@ hold_message() {
 }
 
 unhold_message() {
+	local LST ID
 	if [ "$1" != "ALL" ]; then
-		rm -f "$Q/$1".hold
+		LST="$Q/$1".hold	
 	else
-		rm -f "$Q"/*.hold
+		LST="$(ls -A "$Q"/*.hold)"
 	fi
+	
+	for hold in $LST; do
+		ID="$(basename "$hold" .hold)"
+		# If send delay has not yet past
+		if [ "$(($(date +%s -r "${Q}/${ID}.mail") + $MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
+			# skip this message
+			continue
+		fi
+		rm -f $hold
+	done
 }
 
 purge_message() {
