@@ -420,7 +420,7 @@ run_queue() {
 	local M ID LST="$(ls "$Q"/*.mail 2>/dev/null)" HO=1	# list of mails in queue
 
 	if [ -n "$LST" ] ; then					# something in queue
-		for M in $LST: do
+		for M in $LST; do
 		    ID="$(basename $M .mail)"
 		    # Only send mail not marked hold
 		    [ ! -e "${Q}/${ID}.hold" ] && {
