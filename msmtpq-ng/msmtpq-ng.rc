@@ -1,5 +1,3 @@
-#!/bin/sh
-
 #Q=~/msmtp.queue
 #LOG=~/log/.msmtp.queue.log
 #MAXLOGLEVEL=8
@@ -14,7 +12,7 @@
 #MSMTP_IGNORE_NO_RECIPIENTS=false
 #MSMTP_QUEUE_ONLY=false
 #MSMTP_SEND_DELAY=0
-#MSMTP_MAX_QUEUE_LIFETIME=345600	# Four days
+#MSMTP_MAXIMUM_QUEUE_LIFETIME=345600	# Four days
 #MSMTP=msmtp
 #MSMTPQ_NG_QUEUE=msmtpq-ng-queue
 #MSMTP_HOLD_SMTP_MAIL=true

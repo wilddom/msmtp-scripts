@@ -1,18 +1,6 @@
 #!/bin/sh
+
 set -e
-
-# Create msmtp user/group if they do not exist
-if ! getent passwd | grep -q "^msmtp:"; then
-    echo "Adding msmtp group and user..."
-    adduser --quiet --home /var/spool/msmtp --no-create-home --disabled-login --system msmtp || true
-fi
-
-# Users need read/write permission to create/destroy lock files and to create queue files
-# Unless using SMTP server (in which case don't make users members of msmtp group)
-if [ ! -d /var/spool/msmtp ]; then
-	mkdir -m 0770 -p /var/spool/msmtp
-	chown msmtp:msmtp /var/spool/msmtp
-fi
 
 if [ -e /usr/share/debconf/confmodule ]; then
 	. /usr/share/debconf/confmodule
@@ -27,35 +15,49 @@ write_config () {
 
 	db_get msmtpq-ng-mta/send_delay
 	if [ "x$RET" != "x" ]; then
-		if grep -q '^(#)?MSMTP_SEND_DELAY'; then
-			sed -i -e "s/^\\(#\\)?MSMTP_SEND_DELAY=.*/MSMTP_SEND_DELAY=$RET/" /etc/msmtpq-ng-mta.rc.new
+		if grep -q '^\(#\)\?MSMTP_SEND_DELAY' /etc/msmtpq-ng-mta.rc.new; then
+			sed -i -e "s/^\\(#\\)\?MSMTP_SEND_DELAY=.*/MSMTP_SEND_DELAY=$RET/" /etc/msmtpq-ng-mta.rc.new
 		else
-			sed -i -e "$a\\MSMTP_SEND_DELAY=$RET" /etc/msmtpq-ng-mta.rc.new
+			sed -i -e "\$a\\MSMTP_SEND_DELAY=$RET" /etc/msmtpq-ng-mta.rc.new
 		fi
 	fi
 
 	db_get msmtpq-ng-mta/maximum_queue_lifetime
 	if [ "x$RET" != "x" ]; then
-		if grep -q '^(#)?MSMTP_MAXIUMUM_QUEUE_LIFETIME'; then
-			sed -i -e "s/^\\(#\\)?MSMTP_MAXIMUM_QUEUE_LIFETIME=.*/MSMTP_MAXIMUM_QUEUE_LIFETIME=$RET/" /etc/msmtpq-ng-mta.rc.new
+		if grep -q '^\(#\)\?MSMTP_MAXIMUM_QUEUE_LIFETIME' /etc/msmtpq-ng-mta.rc.new; then
+			sed -i -e "s/^\\(#\\)\?MSMTP_MAXIMUM_QUEUE_LIFETIME=.*/MSMTP_MAXIMUM_QUEUE_LIFETIME=$RET/" /etc/msmtpq-ng-mta.rc.new
 		else
-			sed -i -e "$a\\MSMTP_MAXIMUM_QUEUE_LIFETIME=$RET" /etc/msmtpq-ng-mta.rc.new
+			sed -i -e "\$a\\MSMTP_MAXIMUM_QUEUE_LIFETIME=$RET" /etc/msmtpq-ng-mta.rc.new
 		fi
 	fi
+}
 
 case $1 in
 	configure)
 		write_config
-		if [ -f /etc/msmtpq-ng-mta.rc ]; then
+		if [ -f /etc/msmtpq-ng-mta.rc.new ]; then
 			ucf --debconf-ok /etc/msmtpq-ng-mta.rc.new /etc/msmtpq-ng-mta.rc
-				rm -f /etc/msmtpq-ng-mta.rc.new
-			else
-				mv /etc/msmtpq-ng-mta.new /etc/msmtpq-ng-mta.new
-			fi
+			rm -f /etc/msmtpq-ng-mta.rc.new
+		else
+			mv /etc/msmtpq-ng-mta.rc.new /etc/msmtpq-ng-mta.new
 		fi
 		;;
 	*)
-		exit 0
 		;;
 esac
+
+# Create msmtp user/group if they do not exist
+if ! getent passwd | grep -q "^msmtp:"; then
+	echo "Adding msmtp group and user..."
+	adduser --quiet --home /var/spool/msmtp --no-create-home --disabled-login --system msmtp
+fi
+
+# Users need read/write permission to create/destroy lock files and to create queue files
+# Unless using SMTP server (in which case don't make users members of msmtp group)
+if [ ! -d /var/spool/msmtp ]; then
+	mkdir -m 0770 -p /var/spool/msmtp
+	chown msmtp:msmtp /var/spool/msmtp
+fi
+
+exit 0
 

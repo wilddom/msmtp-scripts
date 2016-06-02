@@ -1,13 +1,13 @@
 #!/bin/sh
 set -e
 
-deluser --system msmtp || true
-delgroup --system msmtp --only-if-empty || true
-
 #DEBHELPER#
 
 case $1 in
 	purge)
+		deluser --system msmtp || true
+		delgroup --system msmtp --only-if-empty || true
+
 		if `which ucf >/dev/null 2>&1` ; then
 			ucf --purge /etc/msmtpq-ng-mta.rc
 		fi

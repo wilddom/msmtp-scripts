@@ -1,16 +1,16 @@
 Template: msmtpq-ng/send_delay
-Type: integer 
+Type: string
 Default: 0
-_Description: Required delay before held mail may be sent
+_Description: Required delay before held mail may be sent:
  msmtpq-ng allows to require that held mail sit in the queue
  for some numbers of seconds before allowing the mail to be
  sent.  This is useful for those of use who need a chance
  to rethink mail we've queued for sending.
 
-Template: msmtpq-mg/maximum_queue_lifetime
-Type: integer
+Template: msmtpq-ng/maximum_queue_lifetime
+Type: string
 Default: 345600
-_Description: Maximum time a message may stay in queue
+_Description: Maximum time a message may stay in queue:
  Unheld messages which fail to be send for longer than
  this number of seconds are purged from the queue
  automatically on the next queue run.

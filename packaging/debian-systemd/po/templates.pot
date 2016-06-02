@@ -1,0 +1,66 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: msmtp-scripts\n"
+"Report-Msgid-Bugs-To: msmtp-scripts@packages.debian.org\n"
+"POT-Creation-Date: 2016-06-01 18:48-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../msmtpq-ng.templates:1001 ../msmtpq-ng-mta.templates:1001
+msgid "Required delay before held mail may be sent:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../msmtpq-ng.templates:1001
+msgid ""
+"msmtpq-ng allows to require that held mail sit in the queue for some numbers "
+"of seconds before allowing the mail to be sent.  This is useful for those of "
+"use who need a chance to rethink mail we've queued for sending."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../msmtpq-ng.templates:2001 ../msmtpq-ng-mta.templates:2001
+msgid "Maximum time a message may stay in queue:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../msmtpq-ng.templates:2001
+msgid ""
+"Unheld messages which fail to be send for longer than this number of seconds "
+"are purged from the queue automatically on the next queue run."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../msmtpq-ng-mta.templates:1001
+msgid ""
+"msmtpq-ng allows to require that held mail sit in the queue for some numbers "
+"of seconds before allowing the mail to be sent.  This is useful for those of "
+"use who need a chance to rethink mail we've queued for sending. Note that "
+"this may differ from msmtpq-ng not used as MTA."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../msmtpq-ng-mta.templates:2001
+msgid ""
+"Unheld messages which fail to be send for longer than this number of seconds "
+"are purged from the queue automatically on the next queue run. Note that "
+"this may differ from msmtpq-ng not used as MTA."
+msgstr ""

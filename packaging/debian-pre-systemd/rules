@@ -2,7 +2,7 @@
 
 override_dh_auto_install:
 	mkdir -p debian/tmp
-	cp * debian/tmp/ || true
+	cp ChangeLog debian/tmp/changelog
 	cp -r msmtpq-ng debian/tmp/
 	mkdir -p debian/tmp/msmtpq-ng-mta
 	cp msmtpq-ng-mta/msmtpq-ng-mta debian/tmp/msmtpq-ng-mta/
@@ -10,13 +10,13 @@ override_dh_auto_install:
 	cp msmtpq-ng-mta/msmtpq-ng-mta.rc debian/tmp/msmtpq-ng-mta/
 	cp msmtpq-ng-mta/msmtpq-ng-mta.rc debian/tmp/msmtpq-ng-mta/
 	cp msmtpq-ng-mta/README.msmtpq-ng-mta debian/tmp/msmtpq-ng-mta/
-	cp msmtpq-ng-mta/sendmail-bs@.service debian/tmp/msmtpq-ng-mta/
-	cp msmtpq-ng-mta/sendmail-bs.socket debian/tmp/msmtpq-ng-mta/
+	cp msmtpq-ng-mta/sendmail-bs@.service debian/tmp/msmtpq-ng-mta/ms-mta-smtpd-systemd@.service
+	cp msmtpq-ng-mta/sendmail-bs.socket debian/tmp/msmtpq-ng-mta/ms-mta-smtpd-systemd.socket
 	mkdir -p debian/tmp/msmtpq-ng-mta/xinetd.d
-	cp msmtpq-ng-mta/sendmail-bs.xinetd debian/tmp/msmtpq-ng-mta/xinetd.d/sendmail-bs
+	cp msmtpq-ng-mta/sendmail-bs.xinetd debian/tmp/msmtpq-ng-mta/xinetd.d/ms-mta-smtpd-inetd
 	mkdir -p debian/tmp/msmtpq-ng-mta/cron.hourly
-	cp msmtpq-ng-mta/sendmail-q.hourly debian/tmp/msmtpq-ng-mta/cron.hourly/sendmail-q
-	cp -r doc debian/tmp
+	cp msmtpq-ng-mta/sendmail-q.hourly debian/tmp/msmtpq-ng-mta/cron.hourly/msmtpq-ng-mta
+	cp -r doc debian/tmp/
 
 override_dh_auto_build:
 	pod2man --center "" --date "" --release "" --section=1 \

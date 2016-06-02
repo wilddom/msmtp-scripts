@@ -1,3 +1,9 @@
 #!/bin/sh
 
+set -e
+
+#DEBHELPER#
+
 update-inetd --remove smtp
+
+exit 0

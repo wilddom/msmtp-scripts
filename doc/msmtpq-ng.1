@@ -35,17 +35,17 @@ Options override configuration file settings.
 They are compatible with sendmail where appropriate.
 .IP "\fBGeneral options\fP"
 As for msmtp, with the following additions:
-.IP \-bp
+.IP "\-bp"
 List queue.
-.IP \-bs
+.IP "\-bs"
 Use SMTP (RFC821) subset (MUST but not all SHOULD) to communicate over stdin and stdout, which
 should be sufficient to allow msmtpq-ng to be used as an SMTP server when combined
 with a tool like xinetd that handles the network communications.
-.IP \-i
+.IP "\-i"
 Ignore dots alone in incoming messages.
-.IP \-q
+.IP "\-q"
 Flush queue.
-.IP \-qI <ID>
+.IP "\-qI <ID>"
 Send message from queue with ID <ID>.
 .IP "\--help"
 Print help.

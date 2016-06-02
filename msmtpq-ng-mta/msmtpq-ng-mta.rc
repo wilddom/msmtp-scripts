@@ -1,5 +1,3 @@
-#!/bin/sh
-
 #Q=/var/spool/msmtp
 #LOG=syslog
 #MSMTP_LOG_UMASK=057
