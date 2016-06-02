@@ -292,7 +292,7 @@ case "$1" in
 "-H")
 	ID="$2"
 	shift 2
-	lock_queue -lq unhold_mesage "$ID"
+	lock_queue -lq unhold_msesage "$ID"
 	RC=$?
 	;;
 "-i")
