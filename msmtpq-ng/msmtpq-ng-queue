@@ -50,7 +50,7 @@ fi
 ## Path to msmtpq-ng - only needed if not in PATH
 [ -z "$MSMTPQ_NG" ] && MSMTPQ_NG=msmtpq-ng
 [ -n "$(which "$MSMTPQ_NG")" ] || [ -x "$MSMTPQ_NG" ] || {
-	log -e 1 "msmtpq-ng-queue: Unable to find msmtpq-ng"
+	err "msmtpq-ng-queue: Unable to find msmtpq-ng"
 	exit 1
 }
 
@@ -92,7 +92,7 @@ LOCK_CMD=flock			# Default to flock
 
 [ -z "$(which flock)" ] && LOCK_CMD=lock		# If we don't have flock try busybox lock
 [ -z "$(which "$LOCK_CMD")" ] && {
-	log -e 72 "   msmtpq-ng: Unable to find lock command"
+	err "msmtpq-ng-queue: Unable to find lock command"
 	exit 72						# Exit with EX_OSFILE
 }
 
