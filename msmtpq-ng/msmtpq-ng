@@ -523,7 +523,7 @@ smtp_mail_from() {
 	FROM="$(echo "$@"|sed -e 's/^[Mm][Aa][Ii][Ll] [Ff][Rr][Oo][Mm]:<\([^@][^@]*@[^@][^@]*\)>.*/\1/')"
 
 	# Got return-path
-	if [ -n "$from" ]; then
+	if [ -n "$FROM" ]; then
 		echo "250 Ok"	# Success response
 		log debug "[SMTP] Got return-path"
 		return 0
@@ -590,8 +590,10 @@ smtp_server() {
 				state=mail
 				to=""
 				FROM=""
-				smtp_mail_from "$line" && state=rcpt
-				log debug "[SMTP] Got MAIL FROM"
+				smtp_mail_from "$line" && {
+					state=rcpt
+					log debug "[SMTP] Got MAIL FROM"
+				}
 				continue	# next line
 			fi
 		# after data MAIL FROM starts a new transaction
@@ -601,8 +603,10 @@ smtp_server() {
 			to=""
 			FROM=""
 
-			smtp_mail_from "$line" && state=rcpt
-			log debug "[SMTP] Got MAIL FROM after DATA"
+			smtp_mail_from "$line" && {
+				state=rcpt
+				log debug "[SMTP] Got MAIL FROM after DATA"
+			}
 			continue		# next line
 		fi
 
