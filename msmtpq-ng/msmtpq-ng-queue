@@ -274,9 +274,9 @@ lock_queue() {
 		if [ "$RC" = "1" ]; then
 			# Couldn't acquire lock
 			log -e 71 "cannot use queue $Q : waited $MAX seconds to" \
-				"  acquire lock [ $LOK ]; giving up" \
+				"acquire lock [ $LOK ]; giving up" \
 				'if you are certain that no other instance of this script' \
-				"  is running, then 'rm -f' the lock file manually" ''
+				"is running, then 'rm -f' the lock file manually" ''
         		exit 71				# exit with EX_OSERR
     		fi
 		rm -f "$LOK"				# make sure we don't have file with permissions
@@ -339,6 +339,7 @@ list_queue() {
 		echo "                                         ${RECIPIENT}"
 	done
 	echo "               Total requests: $CNT"
+	return 0
 }
 
 hold_message() {
@@ -354,6 +355,7 @@ hold_message() {
 		done
 
 	fi
+	return 0
 }
 
 unhold_message() {
@@ -375,6 +377,7 @@ unhold_message() {
 		rm -f $hold
 		log info "message [ $ID ] released"
 	done
+	return 0
 }
 
 purge_message() {
@@ -385,6 +388,7 @@ purge_message() {
 		rm -f "$Q"/*
 		log notice "all messages purged"
 	fi
+	return 0
 }
 
 RC=0

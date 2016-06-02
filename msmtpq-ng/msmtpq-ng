@@ -150,12 +150,18 @@ LOCK_CMD=flock			# Default to flock
 	exit 72						# Exit with EX_OSFILE
 }
 
+# export all configuration globals so that commands
+# run inside lock_queue work correctly
+export MSMTP_OVERRIDE_CONF MSMTP Q LOG MAXLOGLEVEL MSMTP_LOG_UMASK MSMTP_UMASK MSMTP_HOLD_CLI_MAIL MSMTP_HOLD_MSMTP_MAIL MSMTP_SEND_DELAY MSMTP_MAX_QUEUE_LIFETIME MSMTP_LOCK_DIR MSMTPQ_NG_QUEUE EMAIL_CONN_TEST EMAIL_CONN_TEST_PING EMAIL_CONN_TEST_IP EMAIL_CONN_TEST_SITE LOCK_CMD
+
 ## write/remove queue lockfile on forced termination
-on_exit() {                          # unlock the queue on exit if the lock was set here
+on_exit() { # unlock the queue on exit if the lock was set here
+	trap '' INT TERM EXIT				# clear trap so it doesn't happen again
 	local LOK="${MSMTP_LOCK_DIR}/msmtpq-ng.lock"	# lock file name
 	if [ "$(basename $LOCK_CMD)" = "lock" ]; then
-		[ -n "$LKD" ] && lock -u "$LOK" && rm -f "$LOK"
+		[ -n "$LKD" ] && lock -u "$LOK"
 	fi
+	[ -n "$LKD" ] && rm -f "$LOK"			# Make sure to remove lock file
 }
 
 trap on_exit INT TERM EXIT				# run 'on_exit' on exit
@@ -325,9 +331,9 @@ lock_queue() {
 		if [ "$RC" = "1" ]; then
 			# Couldn't acquire lock
 			log err -e 71 "cannot use queue $Q : waited $MAX seconds to" \
-				"  acquire lock [ $LOK ]; giving up" \
+				"acquire lock [ $LOK ]; giving up" \
 				'if you are certain that no other instance of this script' \
-				"  is running, then 'rm -f' the lock file manually" ''
+				"is running, then 'rm -f' the lock file manually" ''
         		exit 71				# exit with EX_OSERR
     		fi
 		rm -f "$LOK"				# make sure we don't have file with permissions
@@ -345,9 +351,9 @@ lock_queue() {
 		[ -z "$LKD" ] && {
  			# lock file still there and locked
 			log err -e 71 "cannot use queue $Q : waited $MAX seconds for" \
-				"  lockdir [ $LOK ] to vanish ; giving up" \
+				"lockdir [ $LOK ] to vanish ; giving up" \
 				'if you are certain that no other instance of this script' \
-				"  is running, then 'rmdir' the lock dir manually" ''
+				"is running, then 'rmdir' the lock dir manually" ''
 			exit 71					# exit with EX_OSERR
 		}
 		$0 $@						# Execute command
@@ -482,6 +488,7 @@ run_queue() {
 		[ "$MSMTP_QUEUE_QUIET" != "true" ] && \
 			dsp '' 'mail queue is empty (nothing to send)' ''
 	fi # inform user (if not running as MTA)
+	return 0
 }
 
 make_id() {
@@ -767,6 +774,7 @@ s/\r\(..*\)\r$/\1/g'|tr -d '\r')"
         	IFS=$'\n'
 	done
   	IFS="$oIFS"
+	return 0
 }
 
 ##
@@ -852,7 +860,6 @@ while [ -n "$1" ]; do
 		;;
 	"--help")
 		usage
-		exit 1
 		;;
 	*)
 		if [ -z "$PARAMS" ];  then
