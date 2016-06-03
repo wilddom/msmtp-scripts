@@ -49,7 +49,7 @@ esac
 # Create msmtp user/group if they do not exist
 if ! getent passwd | grep -q "^msmtp:"; then
 	echo "Adding msmtp group and user..."
-	adduser --quiet --home /var/spool/msmtp --no-create-home --disabled-login --system msmtp
+	adduser --quiet --home /var/spool/msmtp --no-create-home --disabled-login --system --group msmtp
 fi
 
 # Users need read/write permission to create/destroy lock files and to create queue files
