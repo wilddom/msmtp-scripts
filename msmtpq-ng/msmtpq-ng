@@ -605,7 +605,7 @@ smtp_server() {
 
 	# Split on newline only
 	IFS=$'\n'
-	cat - | while read line; do
+	while read -r line; do
 		IFS="$oIFS"
 		# First we need a HELO (we don't undertand EHLO)
 		if [ "$state" = "initial" ] && echo "$line" | grep -qi '^helo '; then
@@ -614,6 +614,7 @@ smtp_server() {
 			to=""
 			from=""
 			log debug "[SMTP] Got HELO"
+			IFS=$'\n'
 			continue		# next line
 		elif [ "$state" = "initial" ]; then
 			# We don't implement EHLO
@@ -625,6 +626,7 @@ smtp_server() {
 				echo "503 Command out of sequence"
 				log err "[SMTP] Bad line $line expecting HELO"
 			fi
+			IFS=$'\n'
 			continue		# next line
 		fi
 
@@ -649,6 +651,7 @@ smtp_server() {
 					state=rcpt
 					log debug "[SMTP] Got MAIL FROM ($FROM)"
 				}
+				IFS=$'\n'
 				continue	# next line
 			fi
 		# after data MAIL FROM starts a new transaction
@@ -662,6 +665,7 @@ smtp_server() {
 				state=rcpt
 				log debug "[SMTP] Got MAIL FROM ($FROM) after DATA"
 			}
+			IFS=$'\n'
 			continue		# next line
 		fi
 
@@ -674,6 +678,7 @@ smtp_server() {
 			rm -f "${FQP}".*
 			echo "250 Ok"			# response
 			log debug "[SMTP] Got RSET"
+			IFS=$'\n'
 			continue			# next line
 		fi
 
@@ -695,6 +700,7 @@ smtp_server() {
 			fi
 			echo "250 Ok"
 			log debug "[SMTP] Got RCPT TO ($to)"
+			IFS=$'\n'
 			continue			# next line
 		# Got RCPT TO in at the wrong time
 		elif [ "$state" != "rcpt" ] && echo "$line" | grep -qiE "^rcpt to:<[^@]+@[^@]+>"; then
@@ -706,6 +712,7 @@ smtp_server() {
 		if [ "$state" != "initial" ] && echo "$line" | grep -qi "^noop"; then
 			echo "250 Ok"
 			log debug "[SMTP] Got NOOP"
+			IFS=$'\n'
 			continue			# next line
 		fi
 
@@ -714,17 +721,17 @@ smtp_server() {
 			state=data
 			echo "354 Start of mail input; end with <CRLF>.<CRLF>"
 			log debug "[SMTP] Got start DATA"
+			IFS=$'\n'
 			continue	# next line
 		fi
 
 		# We're in accept data mode
 		if [ "$state" = "data" ]; then
-			# Strip bare line feeds and carriage returns (they shouldn't occur)
-			cleanline="$(echo "$line"|sed -e '/^$/d
-s/\r\(..*\)\r$/\1/g'|tr -d '\r')"
+			cleanline="$(echo "$line"|tr -d '\r')"
 			# Then take from the beginning to line ending with .<CRLF>
 			if ! echo "$cleanline"|grep -q '^\.$'; then
-				echo "$cleanline"|sed -e 's/^\.\(..*\)$/\1/' >>"${FQP}.mail"
+				echo "$cleanline"|sed -e 's/^\.\(..*\)$/\1/
+s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 				RC=$?
 				# If there is error report it
 				if [ "$RC" != "0" ]; then
@@ -732,6 +739,7 @@ s/\r\(..*\)\r$/\1/g'|tr -d '\r')"
 					log err -e $RC "[SMTP] mail for [ $FROM ] failed; failed to queue mail body"
 					rm -f "${FQP}.*"
 				fi
+				IFS=$'\n'
 				continue 	# next line
 			fi
 			log debug "Got $(wc -c "${FQP}.mail") bytes of DATA"
@@ -770,10 +778,9 @@ s/\r\(..*\)\r$/\1/g'|tr -d '\r')"
 				log err -e $RC "[SMTP] Transaction failed"
 			fi
                 fi
-		continue			# next line
-        	IFS=$'\n'
+		IFS=$'\n'
 	done
-  	IFS="$oIFS"
+	IFS="$oIFS"
 	return 0
 }
 
