@@ -122,6 +122,7 @@ usage() {
 	echo "-H <ID>		Take message with ID <ID> off hold (ALL for all)"
 	echo "-i <ID>		Flush message with ID <ID>"
 	echo "-d <ID>		Purge message with ID <ID> (ALL for all)"
+	echo "-s <ID>		Show contents of message with ID <ID>"
 	echo "--help		This message"
 	exit 1
 }
@@ -391,6 +392,11 @@ purge_message() {
 	return 0
 }
 
+show_message() {
+	cat "$Q/$1.mail" || return 74
+	return 0
+}
+
 RC=0
 FUNC=""
 
@@ -429,6 +435,12 @@ case "$1" in
 	ID="$2"
 	shift 2
 	lock_queue -lq purge_message "$ID"
+	RC=$?
+	;;
+"-s")
+	ID="$2"
+	shift 2
+	lock_queue -lq show_message "$ID"
 	RC=$?
 	;;
 "--help")
