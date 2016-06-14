@@ -317,7 +317,7 @@ list_queue() {
 			CNT=$((CNT + 1))
 		fi
 	done
-	echo "               $Q ($CNT requests)"
+	echo "                 $Q ($CNT requests)"
 	echo "----Q-ID-------- --Size-- -----Q-Time----- ----------Sender/Recipient----------"
 	for mail in $LST; do
 		[ ! -r "$mail" ] && continue
@@ -336,10 +336,10 @@ list_queue() {
 		SENDER="$(sed -e 's/^.*-f \([^ ][^ ]*\) .*$/\1/' "${Q}/${ID}.msmtp" 2>/dev/null)"
 		RECIPIENT="$(sed -e 's/^.* -- \([^ ][^ ]*\) *.*$/\1/' "${Q}/${ID}.msmtp" 2>/dev/null)"
 		echo "${ID}${STATUS} $(printf "%8d" ${SIZE}) ${TIME} ${SENDER}"
-		echo "               $(cat ${Q}/${ID}.msg 2>/dev/null)"
-		echo "                                         ${RECIPIENT}"
+		echo "                 $(cat ${Q}/${ID}.msg 2>/dev/null)"
+		echo "                                           ${RECIPIENT}"
 	done
-	echo "               Total requests: $CNT"
+	echo "                 Total requests: $CNT"
 	return 0
 }
 
