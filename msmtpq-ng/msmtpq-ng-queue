@@ -317,7 +317,7 @@ list_queue() {
 		fi
 	done
 	echo "               $Q ($CNT requests)"
-	echo "----Q-ID------ --Size-- -----Q-Time----- ----------Sender/Recipient----------"
+	echo "----Q-ID-------- --Size-- -----Q-Time----- ----------Sender/Recipient----------"
 	for mail in $LST; do
 		[ ! -r "$mail" ] && continue
 		ID="$(basename "$mail" .msmtp)"
