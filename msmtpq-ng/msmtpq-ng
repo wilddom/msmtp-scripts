@@ -631,7 +631,7 @@ smtp_server() {
 		fi
 
 		# On QUIT exit the server
-		if echo "$line" | grep -qi '^quit'; then
+		if [ "$state" != "data" ] && echo "$line" | grep -qi '^quit'; then
 			echo "221 $(cat /proc/sys/kernel/hostname) closing transmission channel"
 			log debug "[SMTP] Got QUIT"
 			return
