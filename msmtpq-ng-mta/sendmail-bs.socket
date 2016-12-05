@@ -4,7 +4,7 @@ Description=Accept SMTP connections and pass them to sendmail -bs on stdin/stdou
 [Socket]
 ListenStream=[::1]:25
 Accept=yes
-MaxConnections=1
+MaxConnections=10
 
 [Install]
 WantedBy=sockets.target
