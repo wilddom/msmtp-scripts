@@ -1,19 +1,13 @@
 Source: msmtp-scripts
 Section: mail
 Priority: extra
-Maintainer: Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
-Build-Depends:
-    debhelper (>= 9),
-    po-debconf
+Maintainer: Daniel Dickinson <msmtp-scripts@cshore.thecshore.com>
+Build-Depends: debhelper (>= 9), po-debconf
 Standards-Version: 3.9.7
 Homepage: http://msmtp-scripts.sourceforge.net/
-
 Package: msmtpq-ng
 Architecture: all
-Depends:
-    ${misc:Depends},
-    msmtp | msmtp-gnome,
-    ucf
+Depends: ${misc:Depends}, msmtp | msmtp-gnome, ucf
 Description: queueing wrapper around msmtp light SMTP client
  msmtpq-ng and msmtpq-ng-queue are wrapper scripts around msmtp
  light SMTP client that allows adds queueing of email, for
@@ -22,11 +16,7 @@ Description: queueing wrapper around msmtp light SMTP client
 
 Package: msmtpq-ng-mta
 Architecture: all
-Depends:
-    ${misc:Depends},
-    msmtpq-ng,
-    ucf,
-    adduser
+Depends: ${misc:Depends}, msmtpq-ng, ucf, adduser
 Provides: mail-transport-agent
 Conflicts: mail-transport-agent
 Replaces: mail-transport-agent
@@ -40,27 +30,23 @@ Description: queuing wrapper around msmtpq light SMTP client as MTA
 
 Package: ms-mta-smtpd-systemd
 Architecture: all
-Depends:
-    ${misc:Depends},
-    msmtpq-ng-mta,
-    systemd,
-    dh-systemd
-Description: Uses systemd sockets to add network functionality to
- msmtpq-ng-mta's SMTP (RFC821) mode on stdin/stdout,
- which allows it to act as an SMTP server.
- We have a separate package that instead depends some inetd for
+Build-Depends: dh-systemd
+Depends: ${misc:Depends}, msmtpq-ng-mta, systemd
+Description: systemd socket for msmtpq-ng-mta to provide smtpd
+ Uses msmtpq-ng-mta's SMTP (RFC821) mode on stdin/stdout,
+ which allows it to act as a trivial SMTP server.
+ We have a separate package that instead depends on inetd for
  those who don't want the systemd dependency.
  .
- This package uses msmtpq-ng-mta as the system MTA 
+ This package uses msmtpq-ng-mta as the system MTA
 
 Package: ms-mta-smtpd-inetd
 Architecture: all
-Depends:
-    ${misc:Depends},
-    msmtpq-ng-mta,
-    inet-superserver
-Description: Uses some inetd to add network functionality to
+Depends: ${misc:Depends}, msmtpq-ng-mta, inet-superserver
+Description: inetd for msmtpq-ng-mta to provide smtpd
+ Uses some inetd to add network functionality to
  msmtpq-ng-mta's SMTP (RFC821) mode on stdin/stdout,
- which allows it to act as an SMTP server.
+ which allows it to act as a trivial SMTP server.
  .
  This package uses msmtpq-ng-mta as the system MTA 
+
