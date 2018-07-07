@@ -1,3 +1,7 @@
+Version 1.0.10:
+- Assuming we're hosted on a typical git hosting service with auto
+  release archive generation.
+
 Version 1.0.0:
 - Initial import from msmtp https://sourceforge.net/projects/msmtp/
   with additional functionality added.
