@@ -6,7 +6,8 @@ export MSMTP=./tests/scripts/msmtp-fail
 
 TS=FAIL
 
-echo -n "" | ./msmtpq-ng/msmtpq-ng root || TS=PASS
+echo -n "" | ./msmtpq-ng/msmtpq-ng root
+[ -z "$(ls -A ~/.msmtp.queue/*.mail)" ] && TS=PASS
 
 echo "$TS: Sending empty body gives error."
 
