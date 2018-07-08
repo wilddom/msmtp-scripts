@@ -325,7 +325,7 @@ log() {
 }
 
 #
-# Prevent multiple process from access queue at once
+# Prevent multiple process from accessing queue at once
 # 
 # $@: Command and paramters to execute inside the lock
 #

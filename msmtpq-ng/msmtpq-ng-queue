@@ -44,7 +44,7 @@ fi
 
 if [ -n "$MSMTP_OVERRIDE_CONF" ]; then
 	. "$MSMTP_OVERRIDE_CONF"
-	export MSMTP_OVERRIDE_CON
+	export MSMTP_OVERRIDE_CONF
 fi
 
 ## Path to msmtpq-ng - only needed if not in PATH
