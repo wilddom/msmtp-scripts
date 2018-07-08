@@ -18,8 +18,8 @@ echo "Subject: Test mail queueing
 
 Test mail queueing" | ./msmtpq-ng/msmtpq-ng root
 
-grep -q 'EX_UNAVAIL' ~/log/.msmtp.queue.log || TS=FAIL
-grep -q 'Test mail queueing' ~/msmtp.queue/*.mail || TS=FAIL
+grep -q 'EX_UNAVAIL' ~/log/msmtp.queue.log || TS=FAIL
+grep -q 'Test mail queueing' ~/.msmtp.queue/*.mail || TS=FAIL
 
 echo "$TS: Sending a body queues mail"
 
