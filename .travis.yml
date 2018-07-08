@@ -1,2 +1,2 @@
 language: c
-script: ./test/scripts/prepare_test_environment && ./test/scripts/run_all_tests
+script: ./tests/scripts/prepare_test_environment && ./tests/scripts/run_all_tests
