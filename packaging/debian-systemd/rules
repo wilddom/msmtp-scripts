@@ -2,7 +2,7 @@
 
 override_dh_auto_install:
 	mkdir -p debian/tmp
-	cp ChangeLog debian/tmp/changelog
+	cp debian/changelog debian/tmp/changelog
 	cp -r msmtpq-ng debian/tmp/
 	mkdir -p debian/tmp/msmtpq-ng-mta
 	cp msmtpq-ng-mta/msmtpq-ng-mta debian/tmp/msmtpq-ng-mta/
