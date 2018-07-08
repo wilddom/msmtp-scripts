@@ -129,7 +129,7 @@ fi
 ## Lock directory
 [ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtp.lock
 [ -n "$LOCK" ] && [ -d "$LOCK" ] || {
-	err "msmtpq-ng : can't find msmtp log directory [ $LOCK ]" ''	# if not present - complain ; quit
+	err "msmtpq-ng : can't find msmtp lock directory [ $LOCK ]" ''	# if not present - complain ; quit
 }
 
 ## msmtpq-ng-queue binary
