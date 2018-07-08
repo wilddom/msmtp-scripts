@@ -8,7 +8,7 @@ defined and created queue directory ; when the machine is connected
 all mail can be sent directly out (provided a queue flush command
 is send, e.g. via cronjob, or on network up hook).
 
-In addition is able to be able to be used as 'sendmail' command.
+In addition it is able to be able to be used as 'sendmail' command.
 A subset of the RFC821 (SMTP) is also implemented that should be
 sufficient for compliant clients (the SMTP implementation only omits
 certain SHOULD items that compliant clients SHOULD be able live
@@ -48,8 +48,7 @@ to send all non-held mail in the queue.
 Credit for previous implmentation goes to Chis Gianniotis, he gives
 credit to Martin Lambers for the idea of the queue ; any bugs,
 design errors, oversights, suggestions for improvement, etc. belong to
-me (Daniel Dickinson <msmtp-scripts@daniel.theshore.com); all feedback
-is welcome .
+me (Daniel Dickinson <cshored@theshore.com); all feedback is welcome.
 
 
 Installation :

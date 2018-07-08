@@ -23,7 +23,7 @@
 ##   (e.g. embedded systems, etc.)
 ## where the msmtpq-ng script itself is not on the path
 ## set the environment variable MSMTPQ_NG to the full path
-## it msmtpq-ng in /etc/msmtpq-ng-mta.rc
+## of msmtpq-ng in /etc/msmtpq-ng-mta.rc
 ## e.g. 
 ## MSMTPQ_NG=/path/to/msmtpq-ng
 

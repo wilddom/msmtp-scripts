@@ -1,7 +1,7 @@
 # description: Accept SMTP connections and pass them to sendmail -bs on stdin/stdout
 service smtp
 {
-	port 		= 25
+	port		= 25
 	socket_type	= stream
 	wait		= no
 	user		= msmtp

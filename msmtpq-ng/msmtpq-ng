@@ -36,7 +36,7 @@
 ##
 ## Rewritten to be POSIX shell compliant and more sendmail
 ## compatible (esp. wrt to listing/managing queue) by
-## Daniel Dickinson <msmtp-scripts@daniel.thecshore.com> May-June 2016
+## Daniel Dickinson <cshored@thecshore.com> May-June 2016
 ##
 
 ## Global variables

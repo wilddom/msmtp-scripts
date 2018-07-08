@@ -1,7 +1,7 @@
 Source: msmtp-scripts
 Section: mail
 Priority: extra
-Maintainer: Daniel Dickinson <msmtp-scripts@cshore.thecshore.com>
+Maintainer: Daniel Dickinson <cshored@thecshore.com>
 Build-Depends:
     debhelper (>= 9),
     po-debconf,
@@ -19,7 +19,7 @@ Description: queueing wrapper around msmtp light SMTP client
  msmtpq-ng and msmtpq-ng-queue are wrapper scripts around msmtp
  light SMTP client that allows adds queueing of email, for
  example in the case of failure to send the mail or due to lack
- of network connection. 
+ of network connection.
 
 Package: msmtpq-ng-mta
 Architecture: all

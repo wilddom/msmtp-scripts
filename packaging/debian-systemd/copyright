@@ -1,27 +1,27 @@
 Format: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=174
 Upstream-Name: msmtp-scripts
-Upstream-Contact: Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
-Source: http://msmtp-scripts.sourceforge.net/
+Upstream-Contact: Daniel Dickinson <cshored@thecshore.com>
+Source: https://github.com/cshoredaniel/msmtp-scripts.git
 
 Files: msmtpq-ng/*
 Copyright: 2005-2011, Martin Lambers <marlam@marlam.de>
 	   2008-2015, Chris Gianniotis 
-	   2016 Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
+	   2016 Daniel Dickinson <cshored@thecshore.com>
 License: GPL-3+
 
 Files: * (non-recursive)
 Copyright: 2005-2011, Martin Lambers <marlam@marlam.de>
-	   2016 Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
+	   2016 Daniel Dickinson <cshored@thecshore.com>
 License: GPL-3+
 
 Files: msmtpq-ng-mta/*
-Copyright: 2016 Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
+Copyright: 2016 Daniel Dickinson <cshored@thecshore.com>
 License: GPL-3+
 
 Files: debian/*
 Copyright: 2004-2007, Julien Louis <ptitlouis@sysif.net>
            2008-2011, Emmanuel Bouthenot <kolter@debian.org>
-	   2016, Daniel Dickinson <msmtp-scripts@daniel.thecshore.com>
+	   2016, Daniel Dickinson <cshored@thecshore.com>
 License: GPL-2+
 
 License: GPL-2+
