@@ -9,4 +9,4 @@ mkdir -p ~/log || exit 2
 mkdir -p ~/msmtp.queue || exit 2
 mkdir -p ~/msmtp.lock || exit 2
 
-cp msmtp-ng.rc ~/.msmtp-ng.rc
+cp msmtpq-ng.rc ~/.msmtpq-ng.rc
