@@ -96,13 +96,18 @@ fi
 ##     ( note that the LOG setting could be the same as the )
 ##     ( 'logfile' setting in .msmtprc - but there may be   )
 ##     ( some advantage in keeping the two logs separate    )
-##   if you don't want the log at all unset (comment out) this var
-##     LOG=~/log/msmtp.queue.log  -->  #LOG=~/log/msmtp.queue.log
+##   if you don't want the log at all unset (don't just comment out) this var
+##     #LOG=~/log/msmtp.queue.log  -->  LOG=""
 ##     (doing so would be inadvisable under most conditions, however)
 ##
 ## the queue log file - modify (or comment out) to taste  (but no quotes !!)
 [ -z "$LOG" ] && LOG=~/log/msmtp.queue.log
 [ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=7		# Default to not displaying debug log messages
+[ -n "$LOG" ] && [ -d "$LOG" ] || {
+	if [ "$LOG" != "syslog" ]; then
+		err "msmtpq-ng : can't find msmtp log directory [ $LOG ]" ''	# if not present - complain ; quit
+	fi
+}
 
 ## Secure log and spool settings
 [ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
@@ -122,7 +127,10 @@ fi
 [ -z "$MSMTP_MAX_QUEUE_LIFETIME" ] && MSMTP_MAX_QUEUE_LIFETIME=345600	# Four days
 
 ## Lock directory
-[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtp.lock
+[ -n "$LOCK" ] && [ -d "$LOCK" ] || {
+	err "msmtpq-ng : can't find msmtp log directory [ $LOCK ]" ''	# if not present - complain ; quit
+}
 
 ## msmtpq-ng-queue binary
 [ -z "$MSMTQ_NG_QUEUE" ] && MSMTPQ_NG_QUEUE=msmtpq-ng-queue

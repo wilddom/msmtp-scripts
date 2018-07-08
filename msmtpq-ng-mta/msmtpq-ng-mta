@@ -37,6 +37,7 @@ fi
 
 [ -z "$LOG" ] && LOG=syslog
 [ -z "$Q" ] && Q=/var/spool/msmtp
+[ -z "$LOCK" ] && LOCK=/var/lock
 [ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=057
 [ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=007
 [ -z "$MSMTP_QUEUE_QUIET" ] && MSMTP_QUEUE_QUIET=true

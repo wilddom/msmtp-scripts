@@ -1,5 +1,6 @@
 #Q=/var/spool/msmtp
 #LOG=syslog
+#LOCK=/var/lock
 #MSMTP_LOG_UMASK=057
 #MSMTP_LOG_UMASK=007
 #MSMTP_QUEUE_QUIET=true
