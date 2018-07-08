@@ -103,9 +103,9 @@ fi
 ## the queue log file - modify (or comment out) to taste  (but no quotes !!)
 [ -z "$LOG" ] && LOG=~/log/msmtp.queue.log
 [ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=7		# Default to not displaying debug log messages
-[ -n "$LOG" ] && [ -d "$LOG" ] || {
+[ -n "$LOG" ] && [ -d "$(dirname $LOG)" ] || {
 	if [ "$LOG" != "syslog" ]; then
-		err "msmtpq-ng : can't find msmtp log directory [ $LOG ]" ''	# if not present - complain ; quit
+		err "msmtpq-ng : can't find msmtp log directory [ $(dirname $LOG) ]" ''	# if not present - complain ; quit
 	fi
 }
 
