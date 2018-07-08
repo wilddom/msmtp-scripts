@@ -1,0 +1,2 @@
+language: c
+script: ./test/scripts/prepare_test_environment && ./test/scripts/run_all_tests

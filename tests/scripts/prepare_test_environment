@@ -1,0 +1,12 @@
+#!/bin/sh
+
+if [ ! -x /bin/bash ]; then
+	echo "CRITICAL: Bash is required for msmtp-scripts"
+	exit 1
+fi
+
+mkdir -p ~/log || exit 2
+mkdir -p ~/msmtp.queue || exit 2
+mkdir -p ~/msmtp.lock || exit 2
+
+cp msmtp-ng.rc ~/.msmtp-ng.rc
