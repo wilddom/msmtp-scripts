@@ -127,9 +127,9 @@ fi
 [ -z "$MSMTP_MAX_QUEUE_LIFETIME" ] && MSMTP_MAX_QUEUE_LIFETIME=345600	# Four days
 
 ## Lock directory
-[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtp.lock
-[ -n "$LOCK" ] && [ -d "$LOCK" ] || {
-	err "msmtpq-ng : can't find msmtp lock directory [ $LOCK ]" ''	# if not present - complain ; quit
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtpq.lock
+[ -n "$MSMTP_LOCK_DIR" ] && [ -d "$MSMTP_LOCK_DIR" ] || {
+	err "msmtpq-ng : can't find msmtp lock directory [ $MSMTP_LOCK_DIR ]" ''	# if not present - complain ; quit
 }
 
 ## msmtpq-ng-queue binary

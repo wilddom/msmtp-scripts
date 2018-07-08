@@ -88,9 +88,9 @@ fi
 [ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
 
 ## the lock directory
-[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock
-[ -d "$Q" ] || \
-	err '' "msmtpq-ng-queue : can't find msmtp lock directory [ $LOCK ]" ''
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtpq.lock
+[ -d "$MSMTP_LOCK_DIR" ] || \
+	err '' "msmtpq-ng-queue : can't find msmtp lock directory [ $MSMTP_LOCK_DIR ]" ''
 
 ## Secure log and spool settings
 [ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
