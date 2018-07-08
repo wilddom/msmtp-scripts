@@ -2,6 +2,8 @@
 
 OTS=SUCCESS
 
+export MSMTP=./tests/scripts/msmtp-fail
+
 TS=FAIL
 
 echo -n "" | ./msmtpq-ng/msmtpq-ng root || TS=PASS
@@ -9,8 +11,6 @@ echo -n "" | ./msmtpq-ng/msmtpq-ng root || TS=PASS
 echo "$TS: Sending empty body gives error."
 
 [ "$TS" = "FAIL" ] && OTS=FAIL
-
-export MSMTP=./tests/scripts/msmtp-fail
 
 TS=PASS
 

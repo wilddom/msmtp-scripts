@@ -6,7 +6,7 @@ if [ ! -x /bin/bash ]; then
 fi
 
 mkdir -p ~/log || exit 2
-mkdir -p ~/msmtp.queue || exit 2
-mkdir -p ~/msmtp.lock || exit 2
+mkdir -p ~/.msmtp.queue || exit 2
+mkdir -p ~/.msmtp.lock || exit 2
 
 cp ./tests/config/msmtpq-ng.rc ~/.msmtpq-ng.rc
