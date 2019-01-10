@@ -152,7 +152,7 @@ fi
 LOCK_CMD=flock			# Default to flock
 
 [ -z "$(command -v flock)" ] && LOCK_CMD=lock		# If we don't have flock try busybox lock
-[ -z "$(command -v"$LOCK_CMD")" ] && {
+[ -z "$(command -v "$LOCK_CMD")" ] && {
 	err "msmtpq-ng: Unable to find lock command"
 	exit 72						# Exit with EX_OSFILE
 }
