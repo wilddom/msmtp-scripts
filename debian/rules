@@ -5,7 +5,7 @@ override_dh_auto_install:
 	cp README.md debian/tmp/README
 	cp debian/changelog debian/tmp/changelog
 	cp -r msmtpq-ng debian/tmp/
-	mv debian/tmp/msmtpq-ng-mta/README.msmtpq-ng debian/tmp/msmtpq-ng/README
+	mv debian/tmp/msmtpq-ng/README.msmtpq-ng debian/tmp/msmtpq-ng/README
 	mkdir -p debian/tmp/msmtpq-ng-mta
 	cp msmtpq-ng-mta/msmtpq-ng-mta debian/tmp/msmtpq-ng-mta/
 	cp msmtpq-ng-mta/msmtpq-ng-queue-mta debian/tmp/msmtpq-ng-mta/
