@@ -3,11 +3,11 @@ msmqtpq--ng-mta
 
 These scripts are intended to assist in using msmtpq-ng as your
 system MTA.  There is a logrotate configuration snippet to
-manage your logs, when not using syslog, and script for
+manage your logs (when not using syslog), and a script for
 cron.hourly or equivalent that can be used to attempt to send
 any messages in the queue on a periodic basis.
 
-msmtpq-ng-mta is a intended to be used as sendmail (e.g.
+msmtpq-ng-mta is intended to be used as sendmail (e.g.
 symlink /usr/sbin/sendmail and /usr/lib/sendmail to 
 msmtpq-mta in order to use it as your system MTA).
 
@@ -30,17 +30,17 @@ msmtq-mta will look for a configuration file in
 Support scripts and files in this folder are licensed
 under the same license as msmtp as a whole.
 
-They were created by Daniel Dickinson <sourceforge@daniel.thecshore.com>
+They were created by Daniel Dickinson <cshored@thecshore.com>
 
 msmtpq-ng is a rewrite of Chris Giannotis's msmtpq scrtips which is
 turn modification of the scripts comprising part of Martin Lambers'
 msmtpqueue package ; it attempts be useful to msmtp by holding mail sent
 by an MUA when a system, e.g. a laptop, is not connected to the net ;
-or of mail deliver fails.  Queued mails are held as files in a user
-defined and created queue directory ; when the machine is connected
+or if mail deliver fails.  Queued mails are held as files in a user
+defined and created queue directory. When the machine is connected
 all mail can be sent directly out.
 
-In addition is able to be able to be used as 'sendmail' command.
+In addition it is able to be able to be used as the 'sendmail' command.
 A subset of the RFC821 (SMTP) is also implemented that should be
 sufficient for compliant clients (the SMTP implementation only omits
 certain SHOULD items that compliant clients SHOULD be able live
@@ -61,16 +61,15 @@ stdin and stdout.
                 queue run (flush), mail purge from the queue, etc.
 
 msmtp-queue is interactive at the command line while msmtpq, called
-directly, has no interactive user input whatever - it simply takes its
+directly, has no interactive user input whatever.  msmtp-queue simply takes its
 input from the MUA and outputs directly to msmtp (or to the queue)
 
 The majority of msmtpq was written by Chris Giannotis, with
 some additions/modifications by Daniel Dickinson.  Daniel Dickinson
-can be reached via the msmtpq-scripts SourceForge discussion page.
-
-Chis Giannotis: credit goes to Martin Lambers for the idea of the queue ; any bugs,
-design errors, oversights, suggestions for improvement, etc. belong to
-me ; all feedback is welcome 
+can be reached via email at msmtp-scripts@thecshore.com.
+Chis Giannotis: credit goes to Martin Lambers for the idea of the queue;
+any bugs, design errors, oversights, suggestions for improvement, etc.
+belong to me; all feedback is welcome 
 
 
 Installation :
@@ -293,3 +292,7 @@ mailq : ${exec /bin/ls -1 ${HOME}/.msmtp.queue/*.mail 2>/dev/null | /usr/bin/wc 
 With hopes that it's useful,
 
 Chris Gianniotis
+
+With updates by
+
+Daniel Dickinson
