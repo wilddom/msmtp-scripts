@@ -23,7 +23,7 @@ Most of the scripts are modified from the msmtpq
 script originally from the msmtp project
 https://sourceforge.net/projects/msmtp/
 
-## Deprecation Notice
+## Discussion
 
 ### Use Cases
 
