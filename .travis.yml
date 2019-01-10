@@ -8,6 +8,6 @@ deploy:
 language: c
 before_install:
   - sudo apt update
-  - sudo apt install -y dh-systemd
+  - sudo apt install -y dh-systemd fakeroot
 script: "./tests/scripts/prepare_test_environment && ./tests/scripts/run_all_tests"
 dist: xenial
