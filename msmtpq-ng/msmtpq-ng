@@ -579,7 +579,7 @@ smtp_mail_from() {
 	from="$(echo "$@"|sed -e 's/^[Mm][Aa][Ii][Ll] [Ff][Rr][Oo][Mm]:<\([^@][^@]*@[^@][^@]*\)>.*/\1/')"
 
 	# Got return-path
-	if [ -n "$FROM" ]; then
+	if [ -n "$from" ]; then
 		echo "250 Ok"	# Success response
 		log debug "[SMTP] Got return-path"
 		return 0
