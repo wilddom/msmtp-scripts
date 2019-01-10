@@ -2,7 +2,7 @@
 
 OTS=SUCCESS
 
-dpkg-buildpackage -F --no-sign || OTS=FAIL
+dpkg-buildpackage -b --no-sign || OTS=FAIL
 
 if [ "$OTS" == "SUCCESS" ]; then
 	echo "PASS: Debian package build succeeded"
