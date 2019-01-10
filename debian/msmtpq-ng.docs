@@ -1,4 +1,4 @@
-README
+debian/tmp/README
 NEWS
 debian/tmp/changelog
-msmtpq-ng/README.msmtpq-ng
+debian/tmp/msmtpq-ng/README

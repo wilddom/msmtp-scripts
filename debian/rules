@@ -5,6 +5,7 @@ override_dh_auto_install:
 	cp README.md debian/tmp/README
 	cp debian/changelog debian/tmp/changelog
 	cp -r msmtpq-ng debian/tmp/
+	mv debian/tmp/msmtpq-ng-mta/README.msmtpq-ng debian/tmp/msmtpq-ng/README
 	mkdir -p debian/tmp/msmtpq-ng-mta
 	cp msmtpq-ng-mta/msmtpq-ng-mta debian/tmp/msmtpq-ng-mta/
 	cp msmtpq-ng-mta/msmtpq-ng-queue-mta debian/tmp/msmtpq-ng-mta/
@@ -21,10 +22,10 @@ override_dh_auto_install:
 
 override_dh_auto_build:
 	pod2man --center "" --date "" --release "" --section=1 \
-		debian/newaliases.pod > debian/newaliases.1
+		debian/newaliases.pod > debian/tmp/newaliases.1
 
 override_dh_auto_clean:
-	rm -f debian/newaliases.1
+	rm -f debian/tmp/newaliases.1
 	dh_clean
 
 %:
