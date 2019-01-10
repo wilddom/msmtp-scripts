@@ -181,15 +181,6 @@ set sendmail = "EMAIL_CONN_TEST=P /path/to/msmtpq"
 set sendmail = "EMAIL_CONN_TEST=n /path/to/msmtpq"
                  # use queue with netcat connection test
                  # (netcat must be installed on user's system)
-set sendmail = "EMAIL_CONN_TEST=s /path/to/msmtpq"
-                 # use queue with sh sockets connection test
-                 # (this does *not* work on Debian systems ;
-                 #  socket use is not compiled into bash for
-                 #  security reasons on multiuser systems - it
-                 #  may not be a serious consideration, however, on
-                 #  single user workstations - e.g. on laptops -
-                 #  or in embedded systems)
-
 set sendmail = "EMAIL_QUEUE_QUIET=t /path/to/msmtpq"
                  # use queue ; suppress messages and 'chatter'
                  # good, apparently, for use w/emacs MUAs
