@@ -14,8 +14,8 @@ override_dh_auto_install:
 	cp msmtpq-ng-mta/msmtpq-ng-mta.rc debian/tmp/msmtpq-ng-mta/
 	cp msmtpq-ng-mta/msmtpq-ng-mta.rc debian/tmp/msmtpq-ng-mta/
 	cp msmtpq-ng-mta/README.msmtpq-ng-mta debian/tmp/msmtpq-ng-mta/README
-	cp msmtpq-ng-mta/sendmail-bs@.service debian/tmp/msmtpq-ng-mta/ms-mta-smtpd-systemd@.service
-	cp msmtpq-ng-mta/sendmail-bs.socket debian/tmp/msmtpq-ng-mta/ms-mta-smtpd-systemd.socket
+	cp msmtpq-ng-mta/sendmail-bs@.service debian/tmp/msmtpq-ng-mta/ms-mta-smtpd@.service
+	cp msmtpq-ng-mta/sendmail-bs.socket debian/tmp/msmtpq-ng-mta/ms-mta-smtpd.socket
 	mkdir -p debian/tmp/msmtpq-ng-mta/xinetd.d
 	cp msmtpq-ng-mta/sendmail-bs.xinetd debian/tmp/msmtpq-ng-mta/xinetd.d/ms-mta-smtpd-inetd
 	mkdir -p debian/tmp/msmtpq-ng-mta/cron.hourly
