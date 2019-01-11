@@ -2,7 +2,8 @@
 Description=Accept SMTP connections and pass them to sendmail -bs on stdin/stdout
 
 [Socket]
-ListenStream=[::1]:25
+ListenStream=25
+BindDevice=lo
 Accept=yes
 MaxConnections=10
 
