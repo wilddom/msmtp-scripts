@@ -1,3 +1,12 @@
+msmtp-scripts (1.2.0-0~0) xenial; urgency=low
+
+  * Bug fix release.
+
+    - Systemd smtpd socket fixes
+    - Lock dir variable fixes
+
+ -- Daniel Dickinson <ubuntu@thecshore.com>  Fri, 11 Jan 2019 05:23:23 -0500
+
 msmtp-scripts (1.0.0-1) xenial; urgency=low
 
   * Initial Release.
