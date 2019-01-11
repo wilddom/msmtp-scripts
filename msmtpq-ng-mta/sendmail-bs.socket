@@ -3,7 +3,7 @@ Description=Accept SMTP connections and pass them to sendmail -bs on stdin/stdou
 
 [Socket]
 ListenStream=25
-BindDevice=lo
+BindToDevice=lo
 Accept=yes
 MaxConnections=10
 
