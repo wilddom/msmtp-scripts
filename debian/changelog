@@ -1,6 +1,7 @@
-msmtp-scripts (1.2.0-0~0 cosmic; urgency=low
+msmtp-scripts (1.2.0-0~0) xenial; urgency=low
 
   * Bug fix release.
+
     - Systemd smtpd socket fixes
     - Lock dir variable fixes
 
