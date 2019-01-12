@@ -267,25 +267,37 @@ log() {
 }
 
 #
-# Prevent multiple process from access queue at once
-# 
+# Prevent multiple process from accessing queue at once
+#
 # $@: Command and paramters to execute inside the lock
 #
+lock_err() {
+	# Couldn't acquire lock
+	log err -e 71 "cannot use queue $Q : waited $MAX seconds to" \
+		"acquire lock [ $LOK ]; giving up" \
+		'if you are certain that no other instance of this script' \
+		"is running, then 'rm -f' the lock file manually" ''
+	exit 71						# exit with EX_OSERR
+}
+
 lock_queue() {
 	local LOK="${MSMTP_LOCK_DIR}/msmtpq-ng.lock"	# lock file name
 	local MAX=240 SEC=0 RC				# max seconds to gain a lock ; seconds waiting
 
 	if [ "$LOCK_CMD" = "flock" ]; then		# flock makes life easy
-		flock -w $MAX "$LOK" "$0" "$@"		# execute commands inside flock
-		RC=$?
-		if [ "$RC" = "1" ]; then
-			# Couldn't acquire lock
-			log -e 71 "cannot use queue $Q : waited $MAX seconds to" \
-				"acquire lock [ $LOK ]; giving up" \
-				'if you are certain that no other instance of this script' \
-				"is running, then 'rm -f' the lock file manually" ''
-        		exit 71				# exit with EX_OSERR
-    		fi
+		while [ $SEC -lt $MAX ]; do
+			flock -n "$LOK" "$0" "$@"	# execute commands inside flock
+			RC=$?
+			if [ "$RC" = "1" ] && ! flock -n "$LOK" true; then # if it was a locking error
+				sleep 1
+				SEC=$((SEC + 1))
+			else
+				SEC=241
+			fi
+		done
+		if [ "$RC" = "1" ] && [ "$SEC" = 241 ]; then
+			lock_err
+		fi
 		rm -f "$LOK"				# make sure we don't have file with permissions
 							# that blocks others users from locking
 		return $RC				# return exit code of command
@@ -298,15 +310,9 @@ lock_queue() {
 			touch "$LOK" 2>/dev/null
 			$LOCK_CMD -n "$LOK" && LKD='t'
 		done						# try again while locked for MAX secs
-		[ -z "$LKD" ] && {
- 			# lock file still there and locked
-			log -e 71 "cannot use queue $Q : waited $MAX seconds for" \
-				"  lockdir [ $LOK ] to vanish ; giving up" \
-				'if you are certain that no other instance of this script' \
-				"  is running, then 'rmdir' the lock dir manually" ''
-			exit 71					# exit with EX_OSERR
-		}
-		$0 $@						# Execute command
+		[ -z "$LKD" ] && lock_err
+
+		"$0" "$@"					# Execute command
 		RC=$?
 		$LOCK_CMD -u "$LOK"
 		rm -f "$LOK"				# make sure we don't have file with permissions
