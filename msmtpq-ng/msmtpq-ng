@@ -62,7 +62,7 @@ err() {
 
 if [ "$MSMTP_SKIP_CONF" != "true" ]; then
 	[ -r "/etc/msmtpq-ng.rc" ] && . /etc/msmtpq-ng.rc
-	[ -r ~"/.msmtpq-ng.rc" ] && . ~/.msmtpq-ng.rc
+	[ -r ~/.msmtpq-ng.rc ] && . ~/.msmtpq-ng.rc
 fi
 
 if [ -n "$MSMTP_OVERRIDE_CONF" ]; then
@@ -103,7 +103,7 @@ fi
 ## the queue log file - modify (or comment out) to taste  (but no quotes !!)
 [ -z "$LOG" ] && LOG=~/log/msmtp.queue.log
 [ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=7		# Default to not displaying debug log messages
-if ! [ -n "$LOG" ] || ! [ -d "$(dirname $LOG)" ]; then
+if [ -z "$LOG" ] || ! [ -d "$(dirname $LOG)" ]; then
 	if [ "$LOG" != "syslog" ]; then
 		err "msmtpq-ng : can't find msmtp log directory [ $(dirname $LOG) ]" ''	# if not present - complain ; quit
 	fi
@@ -242,7 +242,7 @@ log() {
 			return
 		fi
 	fi
-	
+
 	if [ "$1" = '-e' ] ; then				# there's an error exit code
 		RC="$2"						# take it
 		shift 2						# shift opt & its arg off
@@ -316,7 +316,8 @@ log() {
 		if [ -n "$LOG" ] && [ "$LOG" != "syslog" ]; then	# log is defined and in use
 			echo "$TIMEPFX $PFX : $ARG" >> "$LOG"	# line has content ; send it to log
 		elif [ "$LOG" = "syslog" ]; then
-			echo "$ARG" | logger -i -t msmtpq-ng -p mail."$PRI"
+			CURPID=$$
+			echo "$ARG" | logger -t "msmtpq-ng[$CURPID]" -p mail."$PRI"
 		fi
 	fi
 	umask $MSMTP_UMASK
@@ -325,24 +326,36 @@ log() {
 
 #
 # Prevent multiple process from accessing queue at once
-# 
+#
 # $@: Command and paramters to execute inside the lock
 #
+lock_err() {
+	# Couldn't acquire lock
+	log err -e 71 "cannot use queue $Q : waited $MAX seconds to" \
+		"acquire lock [ $LOK ]; giving up" \
+		'if you are certain that no other instance of this script' \
+		"is running, then 'rm -f' the lock file manually" ''
+	exit 71						# exit with EX_OSERR
+}
+
 lock_queue() {
 	local LOK="${MSMTP_LOCK_DIR}/msmtpq-ng.lock"	# lock file name
 	local MAX=240 SEC=0 RC				# max seconds to gain a lock ; seconds waiting
 
 	if [ "$LOCK_CMD" = "flock" ]; then		# flock makes life easy
-		flock -w $MAX "$LOK" "$0" "$@"		# execute commands inside flock
-		RC=$?
-		if [ "$RC" = "1" ]; then
-			# Couldn't acquire lock
-			log err -e 71 "cannot use queue $Q : waited $MAX seconds to" \
-				"acquire lock [ $LOK ]; giving up" \
-				'if you are certain that no other instance of this script' \
-				"is running, then 'rm -f' the lock file manually" ''
-        		exit 71				# exit with EX_OSERR
-    		fi
+		while [ $SEC -lt $MAX ]; do
+			flock -n "$LOK" "$0" "$@"	# execute commands inside flock
+			RC=$?
+			if [ "$RC" = "1" ] && ! flock -n "$LOK" true; then # if it was a locking error
+				sleep 1
+				SEC=$((SEC + 1))
+			else
+				SEC=241
+			fi
+		done
+		if [ "$RC" = "1" ] && [ "$SEC" = 241 ]; then
+			lock_err
+		fi
 		rm -f "$LOK"				# make sure we don't have file with permissions
 							# that blocks others users from locking
 		return $RC				# return exit code of command
@@ -355,16 +368,9 @@ lock_queue() {
 			touch "$LOK" 2>/dev/null
 			$LOCK_CMD -n "$LOK" && LKD='t'
 		done						# try again while locked for MAX secs
-		[ -z "$LKD" ] && {
- 			# lock file still there and locked
-			log err -e 71 "cannot use queue $Q : waited $MAX seconds for" \
-				"lockdir [ $LOK ] to vanish ; giving up" \
-				'if you are certain that no other instance of this script' \
-				"is running, then 'rmdir' the lock dir manually" ''
-			exit 71					# exit with EX_OSERR
-		}
-		# shellcheck disable=SC2068
-		"$0" $@						# Execute command
+		[ -z "$LKD" ] && lock_err
+
+		"$0" "$@"					# Execute command
 		RC=$?
 		$LOCK_CMD -u "$LOK"
 		rm -f "$LOK"				# make sure we don't have file with permissions
@@ -431,7 +437,7 @@ send_queued_mail() {
 		# Attempt to send via msmtp
 		RETMSG="$($MSMTP "$(cat "${FQP}.msmtp")" < "${FQP}.mail" 2>&1)"
 		RC=$?
-		if [ "$RC" = "0" ]; then       			# this mail goes out the door
+		if [ "$RC" = "0" ]; then			# this mail goes out the door
 			# log success (and maybe display)
 			log info "message [ $1 ]; send successful; purged from queue"
 			rm -f "${FQP}".*				# nuke all queue mail files
@@ -452,18 +458,18 @@ send_queued_mail() {
 				fi
 			fi
 		else	# send was unsuccessful
-			# For all other errors, log it and leaved queued	
+			# For all other errors, log it and leaved queued
 			log err "message [ $1 ]; send failed"
 			echo "$RETMSG" >"${FQP}".msg
 		fi
 		return $RC					# func returns exit code
-	else	
+	else
 		# corresponding param file not found
 		log err "preparing to send .mail file [ $1 ] [ ${FQP}.mail ] but" \
 			"  corresponding .msmtp file [ ${FQP}.msmtp ] was not found in queue" \
 			'  skipping this mail ; this is worth looking into'
 		echo "Missing .msmtp file" >"${FQP}".msg
-	fi  
+	fi
 	return 64
 }
 
@@ -495,20 +501,20 @@ run_queue() {
 make_id() {
 	local INC=0			# increment counter for (possible) base fqp name collision
 
-    	INCSTR="$(printf "%03d" $INC)"
+	INCSTR="$(printf "%03d" $INC)"
 	ID="$(date +%Y%m%d%H%M)"	# make filename id for queue    (global
 	FQP="${Q}/$ID"			# make fully qualified pathname  vars)
 	if [ -f "${FQP}.mail" ] || [ -f "${FQP}.msmtp" ] ; then	# ensure fqp name is unique
 		INC=1			# initial increment
-    		INCSTR="$(printf "%03d" $INC)"
+		INCSTR="$(printf "%03d" $INC)"
 
 		# fqp name w/incr exists
 		while [ -f "${FQP}${INCSTR}.mail" ] || [ -f "${FQP}${INCSTR}.msmtp" ]; do
 			INC=$((INC + 1))	# bump increment
-    			INCSTR="$(printf "%3d" $INC)"
-     		done
+			INCSTR="$(printf "%3d" $INC)"
+		done
 	fi
- 	ID="${ID}${INCSTR}"			# unique ; set id
+	ID="${ID}${INCSTR}"			# unique ; set id
 	FQP="${FQP}${INCSTR}"			# unique ; set fqp name
 }
 
@@ -560,7 +566,7 @@ send_mail() {
 	if [ "$RC" != "0" ]; then
 		return $RC
 	fi
-  
+
 	send_queued_mail "${ID}"
 	RC=$?
 	return $RC
@@ -759,14 +765,14 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 			# Record sender and recipients in msmtp command line form
 			echo '\-f' "$from -- $to" >"${FQP}".msmtp
 			RC=$?
-		
+
 			# If we failed to record msmtp command line report error
 			if [ "$RC" != "0" ]; then
 				echo "554 Transaction Failed"
 				log err -e $RC "[SMTP] mail for [ $from ] failed; failed to record command line"
 				rm -f "${FQP}.*"
 			fi
-			
+
 			# We're finished getting data; now we'll send the mail and wait for
 			# sender to end dialogue or start a new transaction
 			state=postdata
@@ -775,7 +781,7 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 			if [ "$MSMTP_HOLD_SMTP_MAIL" = "true" ]; then
 				touch "${FQP}.hold"
 			fi
-	
+
 			send_queued_mail "${ID}"
 			RC=$?
 
@@ -799,7 +805,7 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 
 ##
 ## Sendmail command line queue and send
-## 
+##
 ## $@: paramters to pass to msmtp
 ##
 sendmail_queue() {
@@ -851,8 +857,7 @@ RC=0
 
 if [ "$1" = "-lq" ]; then
 	shift
-	# shellcheck disable=SC2068
-	$@
+	"$@"
 	exit $?
 fi
 

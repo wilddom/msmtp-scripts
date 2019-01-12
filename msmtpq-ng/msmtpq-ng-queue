@@ -39,7 +39,7 @@ err() {
 
 if [ "$MSMTP_SKIP_CONF" != "true" ]; then
 	[ -r "/etc/msmtpq-ng.rc" ] && . /etc/msmtpq-ng.rc
-	[ -r "~/.msmtpq-ng.rc" ] && . ~/.msmtpq-ng.rc
+	[ -r ~/.msmtpq-ng.rc ] && . ~/.msmtpq-ng.rc
 fi
 
 if [ -n "$MSMTP_OVERRIDE_CONF" ]; then
@@ -49,7 +49,7 @@ fi
 
 ## Path to msmtpq-ng - only needed if not in PATH
 [ -z "$MSMTPQ_NG" ] && MSMTPQ_NG=msmtpq-ng
-[ -n "$(which "$MSMTPQ_NG")" ] || [ -x "$MSMTPQ_NG" ] || {
+[ -n "$(command -v "$MSMTPQ_NG")" ] || [ -x "$MSMTPQ_NG" ] || {
 	err "msmtpq-ng-queue: Unable to find msmtpq-ng"
 	exit 1
 }
@@ -101,8 +101,8 @@ fi
 
 LOCK_CMD=flock			# Default to flock
 
-[ -z "$(which flock)" ] && LOCK_CMD=lock		# If we don't have flock try busybox lock
-[ -z "$(which "$LOCK_CMD")" ] && {
+[ -z "$(command -v flock)" ] && LOCK_CMD=lock		# If we don't have flock try busybox lock
+[ -z "$(command -v "$LOCK_CMD")" ] && {
 	err "msmtpq-ng-queue: Unable to find lock command"
 	exit 72						# Exit with EX_OSFILE
 }
@@ -120,16 +120,16 @@ trap on_exit INT TERM EXIT				# run 'on_exit' on exit
 umask $MSMTP_UMASK
 
 usage() {
-	echo "$(basename $0): [options]"
+	echo "$(basename "$0"): [options]"
 	echo ""
-	echo "no options	List queue"
-	echo "-f		Flush queue"
-	echo "-h <ID>		Put message with ID <ID> on hold (ALL for all)"
-	echo "-H <ID>		Take message with ID <ID> off hold (ALL for all)"
-	echo "-i <ID>		Flush message with ID <ID>"
-	echo "-d <ID>		Purge message with ID <ID> (ALL for all)"
-	echo "-s <ID>		Show contents of message with ID <ID>"
-	echo "--help		This message"
+	echo 'no options	List queue'
+	echo '\-f		Flush queue'
+	echo '\-h <ID>		Put message with ID <ID> on hold (ALL for all)'
+	echo '\-H <ID>		Take message with ID <ID> off hold (ALL for all)'
+	echo '\-i <ID>		Flush message with ID <ID>'
+	echo '\-d <ID>		Purge message with ID <ID> (ALL for all)'
+	echo '\-s <ID>		Show contents of message with ID <ID>'
+	echo '\--help		This message'
 	exit 1
 }
 
@@ -186,7 +186,7 @@ log() {
 			return
 		fi
 	fi
-	
+
 	if [ "$1" = '-e' ] ; then				# there's an error exit code
 		RC="$2"						# take it
 		shift 2						# shift opt & its arg off
@@ -247,9 +247,9 @@ log() {
 	esac
 
 	if [ -n "$EXITCODE" ]; then
-		ARG="$@"" ""$EXITCODE"
+		ARG="$*"" ""$EXITCODE"
 	else
-		ARG="$@"
+		ARG="$*"
 	fi
 
 
@@ -260,32 +260,46 @@ log() {
 		if [ -n "$LOG" ] && [ "$LOG" != "syslog" ]; then	# log is defined and in use
 			echo "$TIMEPFX $PFX : $ARG" >> "$LOG"	# line has content ; send it to log
 		elif [ "$LOG" = "syslog" ]; then
-			echo "$ARG" | logger -i -t msmtpq-ng -p mail.$PRI
+			CURPID=$$
+			echo "$ARG" | logger -t "msmtpq-ng[$CURPID]" -p mail."$PRI"
 		fi
 	fi
 	umask $MSMTP_UMASK
+
 }
 
 #
-# Prevent multiple process from access queue at once
-# 
+# Prevent multiple process from accessing queue at once
+#
 # $@: Command and paramters to execute inside the lock
 #
+lock_err() {
+	# Couldn't acquire lock
+	log err -e 71 "cannot use queue $Q : waited $MAX seconds to" \
+		"acquire lock [ $LOK ]; giving up" \
+		'if you are certain that no other instance of this script' \
+		"is running, then 'rm -f' the lock file manually" ''
+	exit 71						# exit with EX_OSERR
+}
+
 lock_queue() {
 	local LOK="${MSMTP_LOCK_DIR}/msmtpq-ng.lock"	# lock file name
 	local MAX=240 SEC=0 RC				# max seconds to gain a lock ; seconds waiting
 
 	if [ "$LOCK_CMD" = "flock" ]; then		# flock makes life easy
-		flock -w $MAX "$LOK" "$0" "$@"		# execute commands inside flock
-		RC=$?
-		if [ "$RC" = "1" ]; then
-			# Couldn't acquire lock
-			log -e 71 "cannot use queue $Q : waited $MAX seconds to" \
-				"acquire lock [ $LOK ]; giving up" \
-				'if you are certain that no other instance of this script' \
-				"is running, then 'rm -f' the lock file manually" ''
-        		exit 71				# exit with EX_OSERR
-    		fi
+		while [ $SEC -lt $MAX ]; do
+			flock -n "$LOK" "$0" "$@"	# execute commands inside flock
+			RC=$?
+			if [ "$RC" = "1" ] && ! flock -n "$LOK" true; then # if it was a locking error
+				sleep 1
+				SEC=$((SEC + 1))
+			else
+				SEC=241
+			fi
+		done
+		if [ "$RC" = "1" ] && [ "$SEC" = 241 ]; then
+			lock_err
+		fi
 		rm -f "$LOK"				# make sure we don't have file with permissions
 							# that blocks others users from locking
 		return $RC				# return exit code of command
@@ -298,15 +312,9 @@ lock_queue() {
 			touch "$LOK" 2>/dev/null
 			$LOCK_CMD -n "$LOK" && LKD='t'
 		done						# try again while locked for MAX secs
-		[ -z "$LKD" ] && {
- 			# lock file still there and locked
-			log -e 71 "cannot use queue $Q : waited $MAX seconds for" \
-				"  lockdir [ $LOK ] to vanish ; giving up" \
-				'if you are certain that no other instance of this script' \
-				"  is running, then 'rmdir' the lock dir manually" ''
-			exit 71					# exit with EX_OSERR
-		}
-		$0 $@						# Execute command
+		[ -z "$LKD" ] && lock_err
+
+		"$0" "$@"					# Execute command
 		RC=$?
 		$LOCK_CMD -u "$LOK"
 		rm -f "$LOK"				# make sure we don't have file with permissions
@@ -315,8 +323,10 @@ lock_queue() {
 }
 
 list_queue() {
-	local LST="$(ls -A "$Q"/*.msmtp 2>/dev/null)"
+	local LST
 	local CNT=0 ID SIZE TIME SENDER RECIPIENT
+
+	LST="$(ls -A "$Q"/*.msmtp 2>/dev/null)"
 
 	for mail in $LST; do
 		if [ -r "$mail" ]; then
@@ -329,7 +339,7 @@ list_queue() {
 		[ ! -r "$mail" ] && continue
 		ID="$(basename "$mail" .msmtp)"
 		if [  -e "${Q}/${ID}.hold" ]; then
- 			if [ "$(($(date +%s -r "${Q}/${ID}.mail" 2>/dev/null) + $MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
+			if [ "$(($(date +%s -r "${Q}/${ID}.mail" 2>/dev/null) + MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
 				STATUS="-"
 			else
 				STATUS="!"
@@ -337,12 +347,13 @@ list_queue() {
 		else
 			STATUS="*"
 		fi
+		# shellcheck disable=SC2012
 		SIZE="$(ls -l "$mail"|awk '{ print $5 }')"
 		TIME="$(date +"%a %b %d %H:%M" -r "${Q}/${ID}.mail" 2>/dev/null)"
 		SENDER="$(sed -e 's/^.*-f \([^ ][^ ]*\) .*$/\1/' "${Q}/${ID}.msmtp" 2>/dev/null)"
 		RECIPIENT="$(sed -e 's/^.* -- \([^ ][^ ]*\) *.*$/\1/' "${Q}/${ID}.msmtp" 2>/dev/null)"
-		echo "${ID}${STATUS} $(printf "%8d" ${SIZE}) ${TIME} ${SENDER}"
-		echo "                 $(cat ${Q}/${ID}.msg 2>/dev/null)"
+		echo "${ID}""${STATUS}" "$(printf "%8d" "${SIZE}")" "${TIME}" "${SENDER}"
+		echo "                 $(cat "${Q}"/"${ID}".msg 2>/dev/null)"
 		echo "                                           ${RECIPIENT}"
 	done
 	echo "                 Total requests: $CNT"
@@ -354,8 +365,10 @@ hold_message() {
 		touch "$Q/$1".hold
 		log info "message [ $1 ] held"
 	else
-	 	local LST="$(ls -A "$Q/*.mail 2>/dev/null")"
-		for mail in "$LST"; do
+		local LST
+		LST="$(ls -A "$Q/*.mail 2>/dev/null")"
+
+		for mail in $LST; do
 			ID="$(basename "$mail" .mail)"
 			touch "$Q/$ID".hold
 			log info "message [ $ID ] held"
@@ -368,20 +381,20 @@ hold_message() {
 unhold_message() {
 	local LST ID
 	if [ "$1" != "ALL" ]; then
-		LST="$Q/$1".hold	
+		LST="$Q/$1".hold
 	else
 		LST="$(ls -A "$Q"/*.hold)"
 	fi
-	
+
 	for hold in $LST; do
 		ID="$(basename "$hold" .hold)"
 		# If send delay has not yet past
-		if [ "$(($(date +%s -r "${Q}/${ID}.mail") + $MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
+		if [ "$(($(date +%s -r "${Q}/${ID}.mail") + MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
 			# skip this message
 			log notice "message [ $ID ] too new to release"
 			continue
 		fi
-		rm -f $hold
+		rm -f "$hold"
 		log info "message [ $ID ] released"
 	done
 	return 0
@@ -404,11 +417,10 @@ show_message() {
 }
 
 RC=0
-FUNC=""
 
 if [ "$1" = "-lq" ]; then
 	shift
-	$@
+	"$@"
 	exit $?
 fi
 
@@ -435,7 +447,7 @@ case "$1" in
 "-i")
 	ID="$2"
 	shift 2
-	exec $MSMTPQ_NG -qI $ID
+	exec "$MSMTPQ_NG" -qI "$ID"
 	;;
 "-d")
 	ID="$2"
@@ -455,4 +467,4 @@ case "$1" in
 esac
 
 # Simply ignore commands we don't understand
-exit $RC
+exit "$RC"
