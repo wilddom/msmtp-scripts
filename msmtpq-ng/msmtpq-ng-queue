@@ -186,7 +186,7 @@ log() {
 			return
 		fi
 	fi
-	
+
 	if [ "$1" = '-e' ] ; then				# there's an error exit code
 		RC="$2"						# take it
 		shift 2						# shift opt & its arg off
@@ -264,6 +264,7 @@ log() {
 		fi
 	fi
 	umask $MSMTP_UMASK
+
 }
 
 #

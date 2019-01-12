@@ -242,7 +242,7 @@ log() {
 			return
 		fi
 	fi
-	
+
 	if [ "$1" = '-e' ] ; then				# there's an error exit code
 		RC="$2"						# take it
 		shift 2						# shift opt & its arg off
@@ -436,7 +436,7 @@ send_queued_mail() {
 		# Attempt to send via msmtp
 		RETMSG="$($MSMTP "$(cat "${FQP}.msmtp")" < "${FQP}.mail" 2>&1)"
 		RC=$?
-		if [ "$RC" = "0" ]; then       			# this mail goes out the door
+		if [ "$RC" = "0" ]; then			# this mail goes out the door
 			# log success (and maybe display)
 			log info "message [ $1 ]; send successful; purged from queue"
 			rm -f "${FQP}".*				# nuke all queue mail files
@@ -457,18 +457,18 @@ send_queued_mail() {
 				fi
 			fi
 		else	# send was unsuccessful
-			# For all other errors, log it and leaved queued	
+			# For all other errors, log it and leaved queued
 			log err "message [ $1 ]; send failed"
 			echo "$RETMSG" >"${FQP}".msg
 		fi
 		return $RC					# func returns exit code
-	else	
+	else
 		# corresponding param file not found
 		log err "preparing to send .mail file [ $1 ] [ ${FQP}.mail ] but" \
 			"  corresponding .msmtp file [ ${FQP}.msmtp ] was not found in queue" \
 			'  skipping this mail ; this is worth looking into'
 		echo "Missing .msmtp file" >"${FQP}".msg
-	fi  
+	fi
 	return 64
 }
 
@@ -565,7 +565,7 @@ send_mail() {
 	if [ "$RC" != "0" ]; then
 		return $RC
 	fi
-  
+
 	send_queued_mail "${ID}"
 	RC=$?
 	return $RC
@@ -764,14 +764,14 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 			# Record sender and recipients in msmtp command line form
 			echo '\-f' "$from -- $to" >"${FQP}".msmtp
 			RC=$?
-		
+
 			# If we failed to record msmtp command line report error
 			if [ "$RC" != "0" ]; then
 				echo "554 Transaction Failed"
 				log err -e $RC "[SMTP] mail for [ $from ] failed; failed to record command line"
 				rm -f "${FQP}.*"
 			fi
-			
+
 			# We're finished getting data; now we'll send the mail and wait for
 			# sender to end dialogue or start a new transaction
 			state=postdata
@@ -780,7 +780,7 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 			if [ "$MSMTP_HOLD_SMTP_MAIL" = "true" ]; then
 				touch "${FQP}.hold"
 			fi
-	
+
 			send_queued_mail "${ID}"
 			RC=$?
 
@@ -804,7 +804,7 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 
 ##
 ## Sendmail command line queue and send
-## 
+##
 ## $@: paramters to pass to msmtp
 ##
 sendmail_queue() {
