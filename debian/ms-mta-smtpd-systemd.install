@@ -1,2 +1,2 @@
-msmtpq-ng-mta/ms-mta-smtpd-systemd@.service lib/systemd/system
-msmtpq-ng-mta/ms-mta-smtpd-systemd.socket lib/systemd/system
+msmtpq-ng-mta/ms-mta-smtpd@.service lib/systemd/system
+msmtpq-ng-mta/ms-mta-smtpd.socket lib/systemd/system
