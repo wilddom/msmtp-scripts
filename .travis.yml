@@ -16,4 +16,4 @@ branches:
   - master
   - stable-1.1
   - release-1.2
-  - /^\d+\.\d\+\.\d+$/
+  - /^\d+\.\d+\.\d+$/
