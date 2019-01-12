@@ -1,7 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
 for tscript in ./tests/scripts/t*.sh; do
+	export MSMTP_SKIP_CONF=true
+	export MSMTP_OVERRIDE_CONF=./tmp/msmtpq-ng.rc
 	"$tscript"
 done
