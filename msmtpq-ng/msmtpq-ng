@@ -62,7 +62,7 @@ err() {
 
 if [ "$MSMTP_SKIP_CONF" != "true" ]; then
 	[ -r "/etc/msmtpq-ng.rc" ] && . /etc/msmtpq-ng.rc
-	[ -r ~"/.msmtpq-ng.rc" ] && . ~/.msmtpq-ng.rc
+	[ -r ~/.msmtpq-ng.rc ] && . ~/.msmtpq-ng.rc
 fi
 
 if [ -n "$MSMTP_OVERRIDE_CONF" ]; then
@@ -103,7 +103,7 @@ fi
 ## the queue log file - modify (or comment out) to taste  (but no quotes !!)
 [ -z "$LOG" ] && LOG=~/log/msmtp.queue.log
 [ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=7		# Default to not displaying debug log messages
-if ! [ -n "$LOG" ] || ! [ -d "$(dirname $LOG)" ]; then
+if [ -z "$LOG" ] || ! [ -d "$(dirname $LOG)" ]; then
 	if [ "$LOG" != "syslog" ]; then
 		err "msmtpq-ng : can't find msmtp log directory [ $(dirname $LOG) ]" ''	# if not present - complain ; quit
 	fi
@@ -500,20 +500,20 @@ run_queue() {
 make_id() {
 	local INC=0			# increment counter for (possible) base fqp name collision
 
-    	INCSTR="$(printf "%03d" $INC)"
+	INCSTR="$(printf "%03d" $INC)"
 	ID="$(date +%Y%m%d%H%M)"	# make filename id for queue    (global
 	FQP="${Q}/$ID"			# make fully qualified pathname  vars)
 	if [ -f "${FQP}.mail" ] || [ -f "${FQP}.msmtp" ] ; then	# ensure fqp name is unique
 		INC=1			# initial increment
-    		INCSTR="$(printf "%03d" $INC)"
+		INCSTR="$(printf "%03d" $INC)"
 
 		# fqp name w/incr exists
 		while [ -f "${FQP}${INCSTR}.mail" ] || [ -f "${FQP}${INCSTR}.msmtp" ]; do
 			INC=$((INC + 1))	# bump increment
-    			INCSTR="$(printf "%3d" $INC)"
-     		done
+			INCSTR="$(printf "%3d" $INC)"
+		done
 	fi
- 	ID="${ID}${INCSTR}"			# unique ; set id
+	ID="${ID}${INCSTR}"			# unique ; set id
 	FQP="${FQP}${INCSTR}"			# unique ; set fqp name
 }
 
@@ -856,8 +856,7 @@ RC=0
 
 if [ "$1" = "-lq" ]; then
 	shift
-	# shellcheck disable=SC2068
-	$@
+	"$@"
 	exit $?
 fi
 
