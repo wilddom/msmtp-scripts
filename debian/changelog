@@ -1,9 +1,10 @@
-msmtp-scripts (1.2.0-0~0) xenial; urgency=low
+msmtp-scripts (1.1.1-0~0) xenial; urgency=low
 
-  * Bug fix release.
+  * Backport fixes from 1.2 series
 
     - Systemd smtpd socket fixes
     - Lock dir variable fixes
+    - (internal) Travis fixes
 
  -- Daniel Dickinson <ubuntu@thecshore.com>  Fri, 11 Jan 2019 05:23:23 -0500
 
