@@ -1,12 +1,12 @@
 #!/bin/sh
 
-if [ ! -x /bin/bash ]; then
-	echo "CRITICAL: Bash is required for msmtp-scripts"
+if [ ! -x /bin/sh ]; then
+	echo "CRITICAL: /bin/sh is required for msmtp-scripts"
 	exit 1
 fi
 
-mkdir -p ~/log || exit 2
-mkdir -p ~/.msmtp.queue || exit 2
-mkdir -p ~/.msmtpq.lock || exit 2
+mkdir -p ./tmp/msmtp.queue || exit 2
+mkdir -p ./tmp/msmtp.lock || exit 2
 
-cp ./tests/config/msmtpq-ng.rc ~/.msmtpq-ng.rc
+cp ./tests/config/msmtpq-ng.rc ./tmp/msmtpq-ng.rc
+cp ./tests/config/msmtpq-fail.rc ./tmp/msmtpq-fail.rc
