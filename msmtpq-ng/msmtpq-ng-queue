@@ -260,7 +260,8 @@ log() {
 		if [ -n "$LOG" ] && [ "$LOG" != "syslog" ]; then	# log is defined and in use
 			echo "$TIMEPFX $PFX : $ARG" >> "$LOG"	# line has content ; send it to log
 		elif [ "$LOG" = "syslog" ]; then
-			echo "$ARG" | logger -i -t msmtpq-ng -p mail.$PRI
+			CURPID=$$
+			echo "$ARG" | logger -t "msmtpq-ng[$CURPID]" -p mail."$PRI"
 		fi
 	fi
 	umask $MSMTP_UMASK
