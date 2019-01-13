@@ -1,3 +1,13 @@
+msmtp-scripts (1.2.0-a~alpha2) xenial; urgency=low
+
+  * Fix locking failure doesn't log error
+
+    - Log the locking failure if attempt to get a lock
+      times out
+    - Also cleanup locking failure error message.
+
+ -- Daniel Dickinson <ubuntu@thecshore.com>  Sat, 12 Jan 2019 22:43:51 -0500
+
 msmtp-scripts (1.2.0-a~alpha1) xenial; urgency=low
 
   * Initial cut of milestone 1.2.0-a

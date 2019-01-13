@@ -331,10 +331,10 @@ log() {
 #
 lock_err() {
 	# Couldn't acquire lock
-	log err -e 71 "cannot use queue $Q : waited $MAX seconds to" \
-		"acquire lock [ $LOK ]; giving up" \
-		'if you are certain that no other instance of this script' \
-		"is running, then 'rm -f' the lock file manually" ''
+	log err -e 71 "cannot use queue $Q : Waited $MAX seconds to" \
+		"acquire lock [ $LOK ], so giving up." \
+		'If you are certain that no other instance of this script' \
+		"is running then 'rm -f' the lock file manually: " ''
 	exit 71						# exit with EX_OSERR
 }
 
@@ -350,10 +350,10 @@ lock_queue() {
 				sleep 1
 				SEC=$((SEC + 1))
 			else
-				SEC=241
+				SEC=240
 			fi
 		done
-		if [ "$RC" = "1" ] && [ "$SEC" = 241 ]; then
+		if [ "$RC" = "1" ] && [ "$SEC" = "240" ]; then
 			lock_err
 		fi
 		rm -f "$LOK"				# make sure we don't have file with permissions
