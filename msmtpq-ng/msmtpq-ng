@@ -413,6 +413,7 @@ send_queued_mail() {
 	local FQP="${Q}/${1}"		# fully qualified path name
 	local RC=0			# for msmtp exit code
 	local RETMSG
+	local MSMTP_CMD
 
 	# Held messages may not sent until MSMTP_SEND_DELAY has elapsed
 	if [ -e "${FQP}.hold" ]; then
@@ -435,7 +436,8 @@ send_queued_mail() {
 		fi
 
 		# Attempt to send via msmtp
-		RETMSG="$($MSMTP "$(cat "${FQP}.msmtp")" < "${FQP}.mail" 2>&1)"
+		MSMTP_CMD="$MSMTP $(cat "${FQP}.msmtp")"
+		RETMSG="$($MSMTP_CMD < "${FQP}.mail" 2>&1)"
 		RC=$?
 		if [ "$RC" = "0" ]; then			# this mail goes out the door
 			# log success (and maybe display)
