@@ -128,7 +128,7 @@ fi
 
 ## Lock directory
 [ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtpq.lock
-if ! [ -n "$MSMTP_LOCK_DIR" ] || ! [ -d "$MSMTP_LOCK_DIR" ]; then
+if [ -z "$MSMTP_LOCK_DIR" ] || ! [ -d "$MSMTP_LOCK_DIR" ]; then
 	err "msmtpq-ng : can't find msmtp lock directory [ $MSMTP_LOCK_DIR ]" ''	# if not present - complain ; quit
 fi
 
