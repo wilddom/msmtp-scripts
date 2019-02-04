@@ -506,16 +506,11 @@ make_id() {
 	INCSTR="$(printf "%03d" $INC)"
 	ID="$(date +%Y%m%d%H%M)"	# make filename id for queue    (global
 	FQP="${Q}/$ID"			# make fully qualified pathname  vars)
-	if [ -f "${FQP}.mail" ] || [ -f "${FQP}.msmtp" ] ; then	# ensure fqp name is unique
-		INC=1			# initial increment
+	# fqp name w/incr exists
+	while [ -f "${FQP}${INCSTR}.mail" ] || [ -f "${FQP}${INCSTR}.msmtp" ]; do
+		INC=$((INC + 1))	# bump increment
 		INCSTR="$(printf "%03d" $INC)"
-
-		# fqp name w/incr exists
-		while [ -f "${FQP}${INCSTR}.mail" ] || [ -f "${FQP}${INCSTR}.msmtp" ]; do
-			INC=$((INC + 1))	# bump increment
-			INCSTR="$(printf "%3d" $INC)"
-		done
-	fi
+	done
 	ID="${ID}${INCSTR}"			# unique ; set id
 	FQP="${FQP}${INCSTR}"			# unique ; set fqp name
 }
