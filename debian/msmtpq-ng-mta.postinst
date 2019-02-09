@@ -84,10 +84,11 @@ if ! getent passwd | grep -q "^msmtp:"; then
 	adduser --quiet --home /var/spool/msmtp --no-create-home --disabled-login --system --group msmtp
 fi
 
-# Users need read/write permission to create/destroy lock files and to create queue files
-# Unless using SMTP server (in which case don't make users members of msmtp group)
+# Users each have a directory under /var/spool/msmtp which (because of the umask in
+# script only they can read/write).  This avoids issues with needing to make users
+# members of msmtp group in order to queue or send mail).
 if [ ! -d /var/spool/msmtp ]; then
-	mkdir -m 0770 -p /var/spool/msmtp
+	mkdir -m 1777 -p /var/spool/msmtp
 	chown msmtp:msmtp /var/spool/msmtp
 fi
 

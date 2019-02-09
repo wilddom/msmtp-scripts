@@ -1,6 +1,6 @@
-#Q=/var/spool/msmtp
+#Q=/var/spool/msmtp/"${USER}"
 #LOG=syslog
-#MSMTP_LOCK_DIR=/var/lock
+#MSMTP_LOCK_DIR=/var/lock/msmtp/"${USER}"
 #MSMTP_LOG_UMASK=057
 #MSMTP_LOG_UMASK=007
 #MSMTP_QUEUE_QUIET=true

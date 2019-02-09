@@ -43,6 +43,7 @@ if [ "$MSMTP_SKIP_CONF" != "true" ]; then
 fi
 
 if [ -n "$MSMTP_OVERRIDE_CONF" ]; then
+	# shellcheck source=./tmp/msmtpq-ng.rc
 	. "$MSMTP_OVERRIDE_CONF"
 	export MSMTP_OVERRIDE_CONF
 fi
@@ -62,9 +63,15 @@ fi
 ##
 ## the queue dir - modify this to reflect where you'd like it to be  (no quotes !!)
 [ -z "$Q" ] && Q=~/.msmtp.queue
+
 # if not present - complain ; quit
-[ -d "$Q" ] || \
-	err '' "msmtpq-ng-queue : can't find msmtp queue directory [ $Q ]" ''
+if [ ! -d "$Q" ]; then
+	if [ "$USER" != "root" ]; then
+		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''    # if not present - complain ; quit
+	elif [ ! -d "$(dirname "$Q")" ]; then
+		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''    # if not present - complain ; quit
+	fi
+fi
 
 ## set the queue log file var to the location of the msmtp queue log file
 ##   where it is or where you'd like it to be
@@ -332,8 +339,15 @@ lock_queue() {
 list_queue() {
 	local LST
 	local CNT=0 ID SIZE TIME SENDER RECIPIENT
+	local MQ="${Q}"
+	local Q
 
-	LST="$(ls -A "$Q"/*.msmtp 2>/dev/null)"
+	LST="$(ls -A "$MQ"/*.msmtp 2>/dev/null)"
+
+	if [ "$USER" = "root" ]; then
+		MLST="$(find "$(dirname "${MQ}")" -maxdepth 2 -mindepth 2 -type f -name '*.msmtp')"
+		[ -n "$MLST" ] && LST="$MLST"
+	fi
 
 	for mail in $LST; do
 		if [ -r "$mail" ]; then
@@ -344,6 +358,7 @@ list_queue() {
 	echo "----Q-ID-------- --Size-- -----Q-Time----- ----------Sender/Recipient----------"
 	for mail in $LST; do
 		[ ! -r "$mail" ] && continue
+		Q="$(dirname "${mail}")"
 		ID="$(basename "$mail" .msmtp)"
 		if [  -e "${Q}/${ID}.hold" ]; then
 			if [ "$(($(date +%s -r "${Q}/${ID}.mail" 2>/dev/null) + MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
@@ -387,13 +402,25 @@ hold_message() {
 
 unhold_message() {
 	local LST ID
+	local MQ="${Q}"
+	local Q
+
 	if [ "$1" != "ALL" ]; then
-		LST="$Q/$1".hold
+		LST="$(ls -A "$MQ/${1}".hold 2>/dev/null)"
+		if [ "$USER" = "root" ]; then
+			MLST="$(find "$(dirname "${MQ}")" -maxdepth 2 -mindepth 2 -type f -name "${1}.hold")"
+			[ -n "$MLST" ] && LST="$MLST"
+		fi
 	else
-		LST="$(ls -A "$Q"/*.hold)"
+		LST="$(ls -A "$MQ"/*.hold 2>/dev/null)"
+		if [ "$USER" = "root" ]; then
+			MLST="$(find "$(dirname "${MQ}")" -maxdepth 2 -mindepth 2 -type f -name '*.hold')"
+			[ -n "$MLST" ] && LST="$MLST"
+		fi
 	fi
 
 	for hold in $LST; do
+		Q="$(dirname "${hold}")"
 		ID="$(basename "$hold" .hold)"
 		# If send delay has not yet past
 		if [ "$(($(date +%s -r "${Q}/${ID}.mail") + MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
@@ -409,9 +436,15 @@ unhold_message() {
 
 purge_message() {
 	if [ "$1" != "ALL" ]; then
+		if [ "$USER" = "root" ]; then
+			rm -f "$(dirname "$Q")"/*/"$1".*
+		fi
 		rm -f "$Q/$1".*
 		log notice "message [ $ID ] purged"
 	else
+		if [ "$USER" = "root" ]; then
+			rm -f "$(dirname "${Q}")/*/*"
+		fi
 		rm -f "$Q"/*
 		log notice "all messages purged"
 	fi
@@ -419,7 +452,11 @@ purge_message() {
 }
 
 show_message() {
-	cat "$Q/$1.mail" || return 74
+	if [ "$USER" = "root" ]; then
+		cat "$(dirname "${Q}"/*/"$1".mail 2>/dev/null)" || cat "$Q/$1".mail || return 74
+	else
+		cat "$Q/$1.mail" || return 74
+	fi
 	return 0
 }
 

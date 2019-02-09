@@ -66,6 +66,7 @@ if [ "$MSMTP_SKIP_CONF" != "true" ]; then
 fi
 
 if [ -n "$MSMTP_OVERRIDE_CONF" ]; then
+	# shellcheck source=./tmp/msmtpq-ng.rc
 	[ -r "$MSMTP_OVERRIDE_CONF" ] && . "$MSMTP_OVERRIDE_CONF"
 	export MSMTP_OVERRIDE_CONF
 fi
@@ -90,9 +91,13 @@ fi
 ##
 ## the queue dir - modify this to reflect where you'd like it to be  (no quotes !!)
 [ -z "$Q" ] && Q=~/.msmtp.queue
-[ -d "$Q" ] || {
-	err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''	# if not present - complain ; quit
-}
+if [ ! -d "$Q" ]; then
+	if [ "$USER" != "root" ]; then
+		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''	# if not present - complain ; quit
+	elif [ ! -d "$(dirname "$Q")" ]; then
+		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''	# if not present - complain ; quit
+	fi
+fi
 
 ## set the queue log file var to the location of the msmtp queue log file
 ##   where it is or where you'd like it to be
@@ -423,13 +428,37 @@ send_queued_mail() {
 	local RC=0			# for msmtp exit code
 	local RETMSG
 	local MSMTP_CMD
+	local FQPD
+	local FQPDLST
 
-	# Held messages may not sent until MSMTP_SEND_DELAY has elapsed
+	# Handle multiple queues if root (otherwise only our own queue)
+	if [ "$USER" = "root" ]; then
+		unset FQP
+		if [ -n "$(ls -A "$(dirname ${Q})"/*/*.mail 2>/dev/null)" ]; then
+			FQPDLST="$(find "$(dirname "${Q}")" -maxdepth 1 -mindepth 1 -type d)"
+			for FQPD in $FQPDLST; do
+				FQP="${FQPD}/${1}"
+				if [ -f "${FQP}.mail" ]; then
+					break
+				fi
+			done
+		else
+			# Guess we're not on a multi-queue system
+			FQP="${Q}/${1}"
+		fi
+	fi
+
+	if [ -z "${FQP}" ]; then
+		log warning -e 67 "message [ $1 ]; send failed; does not exist any queue in $(dirname "${Q}")"
+		return 67
+	fi
+
+	# Held messages may not be sent until MSMTP_SEND_DELAY has elapsed
 	if [ -e "${FQP}.hold" ]; then
 		if [ "$(($(date +%s -r "${FQP}.mail" 2>/dev/null) + MSMTP_SEND_DELAY))" -gt "$(date +%s)" ]; then
 			log info "message [ $1 ]; too new to unhold"
 			echo "Too new" >"${FQP}".msg
-			# This is temporary error, so exit with EX_TEMPFAIL
+			# This is a temporary error, so exit with EX_TEMPFAIL
 			return 75
 		fi
 	fi
@@ -439,7 +468,7 @@ send_queued_mail() {
 			connect_test || {
 				log notice "message [ $1 ]; couldn't be sent - host not connected"
 				echo "Host not connected" >"${FQP}".msg
-				# Connetion error is temporary; exit with EX_TEMPFAIL
+				# Connection error is temporary; exit with EX_TEMPFAIL
 				return 75
 			}
 		fi
@@ -460,7 +489,7 @@ send_queued_mail() {
 			if echo "$RETMSG" | grep -q 'no recipients found'; then
 				if [ "$MSMTP_IGNORE_NO_RECIPIENTS" != "true" ]; then
 					# Only log error if no recipients and ignoring
-					log warning -e 67 "message [ $1 ]; send failed; no recpients"
+					log warning -e 67 "message [ $1 ]; send failed; no recipients"
 					echo "No recipients" >"${FQP}".msg
 				else
 					# If we're not ignoring it's fatal and remove the mail
@@ -487,14 +516,19 @@ send_queued_mail() {
 ## run (flush) queue
 ##
 run_queue() {
-	local M ID LST
-	LST="$(ls "$Q"/*.mail 2>/dev/null)" HO=1	# list of mails in queue
+	local M ID LST CURQ
+	LST="$(ls "$Q"/*.mail 2>/dev/null)"		# list of mails in queue
+	if [ "${USER}" = "root" ] && [ -n "$(ls -A "$(dirname "$Q")"/*/*.mail 2>/dev/null)" ]; then
+		LST="$(ls "$(dirname "$Q")"/*/*.mail 2>/dev/null)" # list of mails in queues for all users
+	fi
+	HO=1
 
 	if [ -n "$LST" ] ; then					# something in queue
 		for M in $LST; do
+		    CURQ="$(dirname "$M")"
 		    ID="$(basename "$M" .mail)"
 		    # Only send mail not marked hold
-		    [ ! -e "${Q}/${ID}.hold" ] && {
+		    [ ! -e "${CURQ}/${ID}.hold" ] && {
 			send_queued_mail "$ID"			# send mail - pass {id} only
 			HO=0
 		   }
@@ -511,10 +545,12 @@ run_queue() {
 
 make_id() {
 	local INC=0			# increment counter for (possible) base fqp name collision
+					# we also include user id to avoid collision amongst queue
+					# dirs
 
 	INCSTR="$(printf "%03d" $INC)"
-	ID="$(date +%Y%m%d%H%M)"	# make filename id for queue    (global
-	FQP="${Q}/$ID"			# make fully qualified pathname  vars)
+	ID="$(id -u).$(date +%Y%m%d%H%M)"	# make filename id for queue    (global
+	FQP="${Q}/$ID"				# make fully qualified pathname  vars)
 	# fqp name w/incr exists
 	while [ -f "${FQP}${INCSTR}.mail" ] || [ -f "${FQP}${INCSTR}.msmtp" ]; do
 		INC=$((INC + 1))	# bump increment
@@ -812,7 +848,7 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 ##
 ## Sendmail command line queue and send
 ##
-## $@: paramters to pass to msmtp
+## $@: parameters to pass to msmtp
 ##
 sendmail_queue() {
 	local RC PARAMS="$*"

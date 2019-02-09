@@ -2,7 +2,7 @@
 
 ##--------------------------------------------------------------
 ##
-##  msmtpq-ng-mta:  A wrapper scripts for msmtpq-ng for use as
+##  msmtpq-ng-mta:  A wrapper script for msmtpq-ng for use as
 ##                  system MTA
 ##  Copyright (C) 2016 Daniel Dickinson
 ##
@@ -24,7 +24,7 @@
 ## where the msmtpq-ng script itself is not on the path
 ## set the environment variable MSMTPQ_NG to the full path
 ## of msmtpq-ng in /etc/msmtpq-ng-mta.rc
-## e.g. 
+## e.g.
 ## MSMTPQ_NG=/path/to/msmtpq-ng
 
 MSMTP_OVERRIDE_CONF=/etc/msmtpq-ng-mta.rc
@@ -35,10 +35,10 @@ if [ "$MSMTP_MTA_SKIP_CONF" != "true" ]; then
 	[ -r ~/.msmtpq-ng-mta.rc ] && . ~/.msmtpq-ng-mta.rc
 fi
 
-[ -z "$MSMTP_CONF ] && MSMTP_CONF=/etc/msmtpq-ng-mta-msmtprc
+[ -z "$MSMTP_CONF" ] && MSMTP_CONF=/etc/msmtpq-ng-mta-msmtprc
 [ -z "$LOG" ] && LOG=syslog
-[ -z "$Q" ] && Q=/var/spool/msmtp
-[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock
+[ -z "$Q" ] && Q=/var/spool/msmtp/"${USER}"
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock/msmtp/"${USER}"
 [ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=057
 [ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=007
 [ -z "$MSMTP_QUEUE_QUIET" ] && MSMTP_QUEUE_QUIET=true
@@ -60,7 +60,7 @@ fi
 export LOG Q MSMTP_LOG_UMASK MSMTP_LOCK_DIR MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG MSMTP_CONF
 
 [ -x "$MSMTPQ_NG" ] && exec "$MSMTPQ_NG" "$@"
-[ -n "$(which "$MSMTPQ_NG")" ]  && exec msmtpq-ng "$@"
+[ -n "$(command -v "$MSMTPQ_NG")" ]  && exec msmtpq-ng "$@"
 
 echo "msmtpq-ng-mta: unable to find msmtpq-ng" >&2
 # From sysexits.h: EX_OSFILE

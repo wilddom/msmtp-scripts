@@ -2,8 +2,8 @@
 
 ##--------------------------------------------------------------
 ##
-## msmtpq-ng-queue-mta:	A wrapper scripts for msmtpq-ng-queue for
-## 			use as sendmail/postfix compatible mailq
+## msmtpq-ng-queue-mta:	A wrapper script for msmtpq-ng-queue for
+##			use as sendmail/postfix compatible mailq
 ##			postqueue and postsuper commands
 ##
 ##  Copyright (C) 2016 Daniel Dickinson
@@ -26,7 +26,7 @@
 ## where the msmtpq-ng-queue script itself is not on the path
 ## set the environment variable MSMTPQ_NG_QUEUE to the full path
 ## to msmtpq-ng-queue in /etc/msmtpq-ng-mta.rc
-## e.g. 
+## e.g.
 ## MSMTPQ_NG_QUEUE=/path/to/msmtpq-ng-queue
 
 MSMTP_OVERRIDE_CONF=/etc/msmtpq-ng-mta.rc
@@ -38,8 +38,8 @@ if [ "$MSMTP_MTA_SKIP_CONF" != "true" ]; then
 fi
 
 [ -z "$LOG" ] && LOG=syslog
-[ -z "$Q" ] && Q=/var/spool/msmtp
-[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock
+[ -z "$Q" ] && Q=/var/spool/msmtp/"${USER}"
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock/msmtp/"${USER}"
 [ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=057
 [ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=007
 [ -z "$MSMTP_QUEUE_QUIET" ] && MSMTP_QUEUE_QUIET=true
@@ -49,7 +49,7 @@ fi
 export LOG Q MSMTP_LOCK_DIR MSMTP_LOG_UMASK MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG_QUEUE
 
 [ -x "$MSMTPQ_NG_QUEUE" ] && exec "$MSMTPQ_NG_QUEUE" "$@"
-[ -n "$(which "$MSMTPQ_NG_QUEUE")" ]  && exec msmtpq-ng-queue "$@"
+[ -n "$(command -v "$MSMTPQ_NG_QUEUE")" ]  && exec msmtpq-ng-queue "$@"
 
 echo "mailq: unable to find msmtpq-ng-queue" >&2
 # From sysexits.h: EX_OSFILE
