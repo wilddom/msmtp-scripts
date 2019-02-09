@@ -123,13 +123,20 @@ usage() {
 	echo "$(basename "$0"): [options]"
 	echo ""
 	echo 'no options	List queue'
-	echo '\-f		Flush queue'
-	echo '\-h <ID>		Put message with ID <ID> on hold (ALL for all)'
-	echo '\-H <ID>		Take message with ID <ID> off hold (ALL for all)'
-	echo '\-i <ID>		Flush message with ID <ID>'
-	echo '\-d <ID>		Purge message with ID <ID> (ALL for all)'
-	echo '\-s <ID>		Show contents of message with ID <ID>'
-	echo '\--help		This message'
+	# shellcheck disable=SC2169
+	echo '-f		Flush queue'
+	# shellcheck disable=SC2169
+	echo '-h <ID>		Put message with ID <ID> on hold (ALL for all)'
+	# shellcheck disable=SC2169
+	echo '-H <ID>		Take message with ID <ID> off hold (ALL for all)'
+	# shellcheck disable=SC2169
+	echo '-i <ID>		Flush message with ID <ID>'
+	# shellcheck disable=SC2169
+	echo '-d <ID>		Purge message with ID <ID> (ALL for all)'
+	# shellcheck disable=SC2169
+	echo '-s <ID>		Show contents of message with ID <ID>'
+	# shellcheck disable=SC2169
+	echo '--help		This message'
 	exit 1
 }
 

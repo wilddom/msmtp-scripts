@@ -179,12 +179,18 @@ usage() {
 	echo "$(basename "$0"): [options] -- <recipient>[ <recipient>]..."
 	echo "$(basename "$0"): [options] -t -- <recipient>[ <recipient>]..."
 	echo ""
-	echo '\-bp		List queue'
-	echo '\-bs		SMTP (RFC821) mode'
-	echo '\-i		Don'\''t use line with only a dot as end-of-mail indicator'
-	echo '\-q		Flush queue'
-	echo '\-qI <ID>	Flush a message with ID <ID>'
-	echo '\--help		This message.'
+	# shellcheck disable=SC2169
+	echo '-bp		List queue'
+	# shellcheck disable=SC2169
+	echo '-bs		SMTP (RFC821) mode'
+	# shellcheck disable=SC2169
+	echo '-i		Don'\''t use line with only a dot as end-of-mail indicator'
+	# shellcheck disable=SC2169
+	echo '-q		Flush queue'
+	# shellcheck disable=SC2169
+	echo '-qI <ID>	Flush a message with ID <ID>'
+	# shellcheck disable=SC2169
+	echo '--help		This message.'
 	echo '<other>		Passed on to msmtp command'
 	exit 1
 }
