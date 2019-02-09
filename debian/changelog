@@ -1,3 +1,13 @@
+msmtp-scripts (1.2.0-b) xenial; urgency=low
+
+  * Minor bug fixes
+  * Implement per-user queues and lock dirs to avoid permissions issues
+  * Use a separate msmtprc for msmtpq-ng so that we don't pollute 'pure'
+    msmtp usage.
+  * Fixes for debian/ubuntu packaging.
+
+ -- Daniel Dickinson <ubuntu@thecshore.com>  Sat, 09 Feb 2019 18:58:28 -0500
+
 msmtp-scripts (1.2.0-a~alpha2) xenial; urgency=low
 
   * Fix locking failure doesn't log error
