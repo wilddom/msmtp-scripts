@@ -3,17 +3,21 @@
 OTS=SUCCESS
 
 export MSMTP_SKIP_CONF=true
-export MSMTP_OVERRIDE_CONF=./tmp/msmtpq-fail.rc
+export MSMTP_OVERRIDE_CONF=./tmp/msmtpq-ng.rc
 
-TS=FAIL
+TS=PASS
 
-echo -n "" | ./msmtpq-ng/msmtpq-ng root
-[ -z "$(ls -A ~/.msmtp.queue/*.mail 2>/dev/null)" ] && TS=PASS
+rm -rf ./tmp/msmtp.queue/*
+rm -f ./tmp/msmtp.queue.log
+echo -n "" | ./msmtpq-ng/msmtpq-ng root || TS=FAIL
+grep -qi 'empty body' ./tmp/msmtp.queue.log 2>/dev/null || TS=FAIL
+[ -n "$(ls -A ./tmp/msmtp.queue/*.mail 2>/dev/null)" ] && TS=FAIL
 
-echo "$TS: Sending empty body gives error."
+echo "$TS: Sending empty body emits log (if debug) but not error."
 
 [ "$TS" = "FAIL" ] && OTS=FAIL
 
+export MSMTP_OVERRIDE_CONF=./tmp/msmtpq-fail.rc
 TS=PASS
 
 echo "Subject: Test mail queueing

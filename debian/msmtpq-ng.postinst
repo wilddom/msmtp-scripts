@@ -30,6 +30,33 @@ write_config () {
 			sed -i -e "\$a\\MSMTP_MAXIMUM_QUEUE_LIFETIME=$RET" /etc/msmtpq-ng.rc.new
 		fi
 	fi
+
+	rm -f /etc/msmtpq-ng-msmtprc.new
+	RCFILE=/etc/msmtpq-ng-msmtprc.new
+	echo "account default" >$RCFILE
+
+	db_get msmtpq-ng/host
+	if [ "x$RET" != "x" ]; then
+		echo "host $RET" >>$RCFILE
+	fi
+
+	db_get msmtpq-ng/port
+	if [ "$RET" != "25" ]; then
+		echo "port $RET" >>$RCFILE
+	fi
+
+	db_get msmtpq-ng/auto_from
+	if [ "$RET" = "true" ]; then
+		echo "auto_from on" >>$RCFILE
+		db_get msmtpq-ng/maildomain
+		hostname=`hostname --fqdn`
+		echo "maildomain ${RET:-$hostname}" >>$RCFILE
+	fi
+
+	db_get msmtpq-ng/tls
+	if [ "$RET" = "true" ]; then
+		echo "tls on" >>$RCFILE
+	fi
 }
 
 case $1 in
@@ -41,9 +68,16 @@ case $1 in
 		else
 			mv /etc/msmtpq-ng.rc.new /etc/msmtpq-ng.rc
 		fi
+		if [ -f /etc/msmtpq-ng-msmtprc ]; then
+			ucf --debconf-ok /etc/msmtpq-ng-msmtprc.new /etc/msmtpq-ng-msmtprc
+			rm -f /etc/msmtpq-ng-msmtprc.new
+		else
+			mv /etc/msmtpq-ng-msmtprc.new /etc/msmtpq-ng-msmtprc
+		fi
 		;;
 	*)
 		exit 0
 		;;
 esac
 
+exit 0

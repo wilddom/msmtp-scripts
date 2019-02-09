@@ -14,3 +14,33 @@ _Description: Maximum time a message may stay in queue:
  Unheld messages which fail to be send for longer than
  this number of seconds are purged from the queue
  automatically on the next queue run.
+
+Template: msmtpq-ng/host
+Type: string
+_Description: SMTP server hostname:
+
+
+Template: msmtpq-ng/port
+Type: string
+Default: 25
+_Description: SMTP port number:
+
+
+Template: msmtpq-ng/auto_from
+Type: boolean
+Default: true
+_Description: Generate an envelope-from address?
+ msmtpq-ng (through msmtp) can generate an envelope-from address based on the login name and the
+ "maildomain" configuration variable.
+
+Template: msmtpq-ng/maildomain
+Type: string
+_Description: Domain to use for the envelope-from address:
+
+
+Template: msmtpq-ng/tls
+Type: boolean
+Default: false
+_Description: Use TLS to encrypt connection?
+ Connection to remote hosts can be encrypted using TLS. This option should be
+ enabled if the remote server supports such connections.

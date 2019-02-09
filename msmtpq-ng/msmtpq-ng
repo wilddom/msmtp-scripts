@@ -79,6 +79,9 @@ fi
 	err "msmtpq-ng : can't find the msmtp executable [ $MSMTP ]"	# if not found - complain ; quit
 }
 
+[ -z "$MSMTP_CONF" ] && MSMTP_CONF=/etc/msmtpq-ng-msmtprc
+[ ! -r "$MSMTP_CONF" ] && err "msmtpq-ng : Can't find msmtprc conf file for msmtp [ $MSMTP_CONF ]"	# Can't mail without config
+
 ## set the queue var to the location of the msmtp queue directory
 ##   if the queue dir doesn't yet exist, create it (0700)
 ##     before using this script
@@ -442,7 +445,7 @@ send_queued_mail() {
 		fi
 
 		# Attempt to send via msmtp
-		MSMTP_CMD="$MSMTP $(cat "${FQP}.msmtp")"
+		MSMTP_CMD="$MSMTP -C ""$MSMTP_CONF"" $(cat "${FQP}.msmtp")"
 		RETMSG="$($MSMTP_CMD < "${FQP}.mail" 2>&1)"
 		RC=$?
 		if [ "$RC" = "0" ]; then			# this mail goes out the door

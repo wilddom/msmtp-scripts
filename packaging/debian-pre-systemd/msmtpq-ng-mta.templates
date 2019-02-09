@@ -16,3 +16,38 @@ _Description: Maximum time a message may stay in queue:
  this number of seconds are purged from the queue
  automatically on the next queue run.
  Note that this may differ from msmtpq-ng not used as MTA.
+
+Template: msmtpq-ng-mta/host
+Type: string
+_Description: SMTP server hostname:
+ Note that this may differ from msmtpq-ng not used as MTA.
+
+
+Template: msmtpq-ng-mta/port
+Type: string
+Default: 25
+_Description: SMTP port number:
+ Note that this may differ from msmtpq-ng not used as MTA.
+
+
+Template: msmtpq-ng-mta/auto_from
+Type: boolean
+Default: true
+_Description: Generate an envelope-from address?
+ msmtpq-ng (through msmtp) can generate an envelope-from address based on the login name and the
+ "maildomain" configuration variable.
+ Note that this may differ from msmtpq-ng not used as MTA.
+
+Template: msmtpq-ng-mta/maildomain
+Type: string
+_Description: Domain to use for the envelope-from address:
+ Note that this may differ from msmtpq-ng not used as MTA.
+
+
+Template: msmtpq-ng-mta/tls
+Type: boolean
+Default: false
+_Description: Use TLS to encrypt connection?
+ Connection to remote hosts can be encrypted using TLS. This option should be
+ enabled if the remote server supports such connections.
+ Note that this may differ from msmtpq-ng not used as MTA.

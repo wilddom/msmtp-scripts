@@ -10,3 +10,4 @@ mkdir -p ./tmp/msmtp.lock || exit 2
 
 cp ./tests/config/msmtpq-ng.rc ./tmp/msmtpq-ng.rc
 cp ./tests/config/msmtpq-fail.rc ./tmp/msmtpq-fail.rc
+cp ./tests/config/msmtpq-ng-msmtprc ./tmp/msmtpq-ng-msmtprc

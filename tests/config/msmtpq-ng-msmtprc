@@ -1,0 +1,4 @@
+account default
+host testmail.test
+auto_from on
+maildomain example.test

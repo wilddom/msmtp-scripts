@@ -17,3 +17,4 @@
 #MSMTPQ_NG_QUEUE=msmtpq-ng-queue
 #MSMTP_HOLD_SMTP_MAIL=true
 #MSMTP_HOLD_CLI_MAIL=false
+#MSMTP_CONF=/etc/msmtpq-ng-msmtprc

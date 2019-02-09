@@ -35,6 +35,7 @@ if [ "$MSMTP_MTA_SKIP_CONF" != "true" ]; then
 	[ -r ~/.msmtpq-ng-mta.rc ] && . ~/.msmtpq-ng-mta.rc
 fi
 
+[ -z "$MSMTP_CONF ] && MSMTP_CONF=/etc/msmtpq-ng-mta-msmtprc
 [ -z "$LOG" ] && LOG=syslog
 [ -z "$Q" ] && Q=/var/spool/msmtp
 [ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock
@@ -44,7 +45,19 @@ fi
 [ -z "$MSMTP_IGNORE_NO_RECIPIENTS" ] && MSMTP_IGNORE_NO_RECIPIENTS=true
 [ -z "$MSMTPQ_NG" ] && MSMTPQ_NG=msmtpq-ng
 
-export LOG Q MSMTP_LOG_UMASK MSMTP_LOCK_DIR MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG
+umask $MSMTP_UMASK
+
+# Create per-user queue dir but only if main queue dir exists
+if [ ! -d "${Q}" ] && [ -d "$(dirname "${Q}")" ]; then
+	mkdir -p "${Q}"
+fi
+
+# Create per-user lock dir
+if [ ! -d "${MSMTP_LOCK_DIR}" ]; then
+	mkdir -p "${MSMTP_LOCK_DIR}"
+fi
+
+export LOG Q MSMTP_LOG_UMASK MSMTP_LOCK_DIR MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG MSMTP_CONF
 
 [ -x "$MSMTPQ_NG" ] && exec "$MSMTPQ_NG" "$@"
 [ -n "$(which "$MSMTPQ_NG")" ]  && exec msmtpq-ng "$@"

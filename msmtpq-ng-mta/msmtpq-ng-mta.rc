@@ -7,3 +7,4 @@
 #MSMTP_IGNORE_NO_RECIPIENTS=true
 #MSMTP_SEND_DELAY=0
 #MSMTPQ_NG=msmtpq-ng
+#MSMTP_CONF=/etc/msmtpq-ng-mta-msmtprc
