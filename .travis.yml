@@ -14,6 +14,7 @@ dist: xenial
 branches:
   only:
   - master
+  - testing
   - stable-1.1
   - release-1.2
   - /^\d+\.\d+\.\d+$/
