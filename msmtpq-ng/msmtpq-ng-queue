@@ -55,22 +55,17 @@ fi
 	exit 1
 }
 
+## Secure log and spool settings
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
+
 ## set the queue var to the location of the msmtp queue directory
-##   if the queue dir doesn't yet exist, create it (0700)
-##     before using this script
-##       e.g. ( mkdir msmtp.queue      )
-##            ( chmod 0700 msmtp.queue )
-##
-## the queue dir - modify this to reflect where you'd like it to be  (no quotes !!)
+## the queue dir
 [ -z "$Q" ] && Q=~/.msmtp.queue
 
-# if not present - complain ; quit
 if [ ! -d "$Q" ]; then
-	if [ "$USER" != "root" ]; then
-		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''    # if not present - complain ; quit
-	elif [ ! -d "$(dirname "$Q")" ]; then
-		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''    # if not present - complain ; quit
-	fi
+	umask "$MSMTP_UMASK"
+	mkdir -p "${Q}"
 fi
 
 ## set the queue log file var to the location of the msmtp queue log file
@@ -90,18 +85,12 @@ fi
 	fi
 }
 
-## Secure log and spool settings
-[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
-[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
-
 ## the lock directory
 [ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtpq.lock
-[ -d "$MSMTP_LOCK_DIR" ] || \
-	err '' "msmtpq-ng-queue : can't find msmtp lock directory [ $MSMTP_LOCK_DIR ]" ''
-
-## Secure log and spool settings
-[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
-[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
+[ -d "$MSMTP_LOCK_DIR" ] || {
+	umask $MSMTP_UMASK
+	mkdir -p "$MSMTP_LOCK_DIR"
+}
 
 ## Only send / display messages marked hold than number of seconds
 [ -z "$MSMTP_SEND_DELAY" ] && MSMTP_SEND_DELAY=0
