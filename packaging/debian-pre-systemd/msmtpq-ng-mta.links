@@ -1,6 +1,6 @@
 usr/sbin/msmtpq-ng-mta usr/sbin/sendmail
 usr/sbin/msmtpq-ng-mta usr/lib/sendmail
-usr/sbin/msmtpq-ng-queue-mta usr/sbin/mailq
+usr/sbin/msmtpq-ng-queue-mta usr/bin/mailq
 usr/sbin/msmtpq-ng-queue-mta usr/sbin/postsuper
 usr/sbin/msmtpq-ng-queue-mta usr/sbin/postqueue
 bin/true usr/bin/newaliases
