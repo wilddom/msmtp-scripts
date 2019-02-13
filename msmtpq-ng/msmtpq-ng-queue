@@ -86,7 +86,7 @@ fi
 [ -z "$MAXLOGLEVEL" ] && MAXLOGLEVEL=7		# Default to not displaying debug log messages
 [ -d "$(dirname $LOG)" ] ||  {
 	if [ "$LOG" != "syslog" ]; then
-		err '' "msmtpq-ng-queue : can't find msmtp queue directory [ $(dirname $LOG) ]" ''
+		err '' "msmtpq-ng-queue : can't find msmtp log directory [ $(dirname $LOG) ]" ''
 	fi
 }
 ## the lock directory
