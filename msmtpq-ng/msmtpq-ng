@@ -509,12 +509,14 @@ send_queued_mail() {
 			echo "$RETMSG" >"${FQP}".msg
 		fi
 		return $RC					# func returns exit code
-	else
+	elif [ -f "${FQP}.mail" ]; then
 		# corresponding param file not found
 		log err "preparing to send .mail file [ $1 ] [ ${FQP}.mail ] but" \
 			"  corresponding .msmtp file [ ${FQP}.msmtp ] was not found in queue" \
 			'  skipping this mail ; this is worth looking into'
 		echo "Missing .msmtp file" >"${FQP}".msg
+	else
+		log err "are you sure message-ID [ "$1" ] exists?"
 	fi
 	return 64
 }
