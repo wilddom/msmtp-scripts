@@ -67,7 +67,7 @@ case $1 in
 		else
 			mv /etc/msmtpq-ng-mta.rc.new /etc/msmtpq-ng-mta.rc
 		fi
-		if [ -f /etc/msmtpq-ng-mta-msmtprc ]; then
+		if [ -f /etc/msmtpq-ng-mta-msmtprc.new ]; then
 			ucf --debconf-ok /etc/msmtpq-ng-mta-msmtprc.new /etc/msmtpq-ng-mta-msmtprc
 			rm -f /etc/msmtpq-ng-mta-msmtprc.new
 		else

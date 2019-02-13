@@ -1,3 +1,11 @@
+msmtp-scripts (1.2.0-b-2) xenial; urgency=low
+
+  * Bug fixes
+    - Auto-create queue and/or lock dir as they likely don't exist
+    - Minor debian packaging fixes
+
+ -- Daniel Dickinson <ubuntu@thecshore.com>  Sun, 10 Feb 2019 22:12:05 -0500
+
 msmtp-scripts (1.2.0-b) xenial; urgency=low
 
   * Minor bug fixes

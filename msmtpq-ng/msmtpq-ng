@@ -83,13 +83,11 @@ fi
 [ -z "$MSMTP_CONF" ] && MSMTP_CONF=/etc/msmtpq-ng-msmtprc
 [ ! -r "$MSMTP_CONF" ] && err "msmtpq-ng : Can't find msmtprc conf file for msmtp [ $MSMTP_CONF ]"	# Can't mail without config
 
-## set the queue var to the location of the msmtp queue directory
-##   if the queue dir doesn't yet exist, create it (0700)
-##     before using this script
-##       e.g. ( mkdir msmtp.queue      )
-##            ( chmod 0700 msmtp.queue )
-##
-## the queue dir - modify this to reflect where you'd like it to be  (no quotes !!)
+## Secure log and spool settings
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
+
+## the queue dir
 [ -z "$Q" ] && Q=~/.msmtp.queue
 if [ ! -d "$Q" ]; then
 	if [ ! -d "$(dirname "${Q}")" ]; then
@@ -117,10 +115,6 @@ if [ -z "$LOG" ] || ! [ -d "$(dirname $LOG)" ]; then
 		err "msmtpq-ng : can't find msmtp log directory [ $(dirname $LOG) ]" ''	# if not present - complain ; quit
 	fi
 fi
-
-## Secure log and spool settings
-[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
-[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
 
 ## Default to not holding command line mail
 [ -z "$MSMTP_HOLD_CLI_MAIL" ] && MSMTP_HOLD_CLI_MAIL=false

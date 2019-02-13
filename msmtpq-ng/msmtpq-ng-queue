@@ -55,22 +55,17 @@ fi
 	exit 1
 }
 
+## Secure log and spool settings
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
+
 ## set the queue var to the location of the msmtp queue directory
-##   if the queue dir doesn't yet exist, create it (0700)
-##     before using this script
-##       e.g. ( mkdir msmtp.queue      )
-##            ( chmod 0700 msmtp.queue )
-##
-## the queue dir - modify this to reflect where you'd like it to be  (no quotes !!)
+## the queue dir
 [ -z "$Q" ] && Q=~/.msmtp.queue
 
-# if not present - complain ; quit
 if [ ! -d "$Q" ]; then
-	if [ "$USER" != "root" ]; then
-		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''    # if not present - complain ; quit
-	elif [ ! -d "$(dirname "$Q")" ]; then
-		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''    # if not present - complain ; quit
-	fi
+	umask "$MSMTP_UMASK"
+	mkdir -p "${Q}"
 fi
 
 ## set the queue log file var to the location of the msmtp queue log file
