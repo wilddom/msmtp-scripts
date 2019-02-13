@@ -934,9 +934,14 @@ while [ -n "$1" ]; do
 		exit 0
 		;;
 	"-qI")
-		lock_queue -lq send_queued_mail "$@"
-		RC=$?
-		exit $RC
+		if [ "$1" = "ALL" ]; then
+			lock_queue -lq run_queue
+			exit 0
+		else
+			lock_queue -lq send_queued_mail "$@"
+			RC=$?
+			exit $RC
+		fi
 		;;
 	"--help")
 		usage
