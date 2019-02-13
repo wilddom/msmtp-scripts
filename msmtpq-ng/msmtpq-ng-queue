@@ -89,19 +89,16 @@ fi
 		err '' "msmtpq-ng-queue : can't find msmtp queue directory [ $(dirname $LOG) ]" ''
 	fi
 }
-
-## Secure log and spool settings
-[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
-[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
-
 ## the lock directory
 [ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtpq.lock
-[ -d "$MSMTP_LOCK_DIR" ] || \
-	err '' "msmtpq-ng-queue : can't find msmtp lock directory [ $MSMTP_LOCK_DIR ]" ''
-
-## Secure log and spool settings
-[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=077
-[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
+[ -d "$MSMTP_LOCK_DIR" ] || {
+	if [ ! -d "$(dirname "${MSMTP_LOCK_DIR}")" ]; then
+		# shellcheck disable=SC2174
+		mkdir -m1777 -p "$(dirname "${MSMTP_LOCK_DIR}")"
+	fi
+	umask $MSMTP_UMASK
+	mkdir -p "$MSMTP_LOCK_DIR"
+}
 
 ## Only send / display messages marked hold than number of seconds
 [ -z "$MSMTP_SEND_DELAY" ] && MSMTP_SEND_DELAY=0

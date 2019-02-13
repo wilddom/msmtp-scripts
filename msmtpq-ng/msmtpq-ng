@@ -92,11 +92,12 @@ fi
 ## the queue dir - modify this to reflect where you'd like it to be  (no quotes !!)
 [ -z "$Q" ] && Q=~/.msmtp.queue
 if [ ! -d "$Q" ]; then
-	if [ "$USER" != "root" ]; then
-		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''	# if not present - complain ; quit
-	elif [ ! -d "$(dirname "$Q")" ]; then
-		err "msmtpq-ng : can't find msmtp queue directory [ $Q ]" ''	# if not present - complain ; quit
+	if [ ! -d "$(dirname "${Q}")" ]; then
+		# shellcheck disable=SC2174
+		mkdir -m1777 -p "$(dirname "${Q}")"
 	fi
+	umask "$MSMTP_UMASK"
+	mkdir -p "${Q}"
 fi
 
 ## set the queue log file var to the location of the msmtp queue log file
@@ -136,9 +137,14 @@ fi
 
 ## Lock directory
 [ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtpq.lock
-if [ -z "$MSMTP_LOCK_DIR" ] || ! [ -d "$MSMTP_LOCK_DIR" ]; then
-	err "msmtpq-ng : can't find msmtp lock directory [ $MSMTP_LOCK_DIR ]" ''	# if not present - complain ; quit
-fi
+[ -d "$MSMTP_LOCK_DIR" ] || {
+	if [ ! -d "$(dirname "${MSMTP_LOCK_DIR}")" ]; then
+		# shellcheck disable=SC2174
+		mkdir -m1777 -p "$(dirname "${MSMTP_LOCK_DIR}")"
+	fi
+	umask $MSMTP_UMASK
+	mkdir -p "$MSMTP_LOCK_DIR"
+}
 
 ## msmtpq-ng-queue binary
 [ -z "$MSMTPQ_NG_QUEUE" ] && MSMTPQ_NG_QUEUE=msmtpq-ng-queue

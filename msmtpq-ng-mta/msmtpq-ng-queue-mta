@@ -38,10 +38,10 @@ if [ "$MSMTP_MTA_SKIP_CONF" != "true" ]; then
 fi
 
 [ -z "$LOG" ] && LOG=syslog
-[ -z "$Q" ] && Q=/var/spool/msmtp/"${USER}"
-[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock/msmtp/"${USER}"
-[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=057
-[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=007
+[ -z "$Q" ] && Q=/var/spool/msmtp/"$(id -un)"
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock/msmtp/"$(id -un)"
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=007
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
 [ -z "$MSMTP_QUEUE_QUIET" ] && MSMTP_QUEUE_QUIET=true
 [ -z "$MSMTP_IGNORE_NO_RECIPIENTS" ] && MSMTP_IGNORE_NO_RECIPIENTS=true
 [ -z "$MSMTPQ_NG_QUEUE" ] && MSMTPQ_NG_QUEUE=msmtpq-ng-queue

@@ -1,7 +1,7 @@
-#Q=/var/spool/msmtp/"${USER}"
+#Q=/var/spool/msmtp/"$(id -un)"
 #LOG=syslog
-#MSMTP_LOCK_DIR=/var/lock/msmtp/"${USER}"
-#MSMTP_LOG_UMASK=057
+#MSMTP_LOCK_DIR=/var/lock/msmtp/"$(id -un)"
+#MSMTP_UMASK=077
 #MSMTP_LOG_UMASK=007
 #MSMTP_QUEUE_QUIET=true
 #MSMTP_IGNORE_NO_RECIPIENTS=true
