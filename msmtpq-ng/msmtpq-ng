@@ -90,6 +90,10 @@ fi
 ## the queue dir
 [ -z "$Q" ] && Q=~/.msmtp.queue
 if [ ! -d "$Q" ]; then
+	if [ ! -d "$(dirname "${Q}")" ]; then
+		# shellcheck disable=SC2174
+		mkdir -m1777 -p "$(dirname "${Q}")"
+	fi
 	umask "$MSMTP_UMASK"
 	mkdir -p "${Q}"
 fi
@@ -128,6 +132,10 @@ fi
 ## Lock directory
 [ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=~/.msmtpq.lock
 [ -d "$MSMTP_LOCK_DIR" ] || {
+	if [ ! -d "$(dirname "${MSMTP_LOCK_DIR}")" ]; then
+		# shellcheck disable=SC2174
+		mkdir -m1777 -p "$(dirname "${MSMTP_LOCK_DIR}")"
+	fi
 	umask $MSMTP_UMASK
 	mkdir -p "$MSMTP_LOCK_DIR"
 }
@@ -495,12 +503,14 @@ send_queued_mail() {
 			echo "$RETMSG" >"${FQP}".msg
 		fi
 		return $RC					# func returns exit code
-	else
+	elif [ -f "${FQP}.mail" ]; then
 		# corresponding param file not found
 		log err "preparing to send .mail file [ $1 ] [ ${FQP}.mail ] but" \
 			"  corresponding .msmtp file [ ${FQP}.msmtp ] was not found in queue" \
 			'  skipping this mail ; this is worth looking into'
 		echo "Missing .msmtp file" >"${FQP}".msg
+	else
+		log err "are you sure message-ID [ ""$1"" ] exists?"
 	fi
 	return 64
 }
@@ -642,7 +652,7 @@ smtp_server() {
 	local from to RC FROM
 
 	# Initial greeting
-	echo "220 $(cat /proc/sys/kernel/hostname) Simple Mail Transer Service Ready"
+	echo "220 $(cat /proc/sys/kernel/hostname) Simple Mail Transfer Service Ready"
 
 	# Split on newline only
 	IFS='
@@ -683,7 +693,7 @@ smtp_server() {
 
 		# We accept MAIL FROM until DATA is in progress
 		if  [ "$state" = "mail" ] || [ "$state" = "rcpt" ]; then
-			if echo "$line" | grep -qi '^mail from:<[^@]\+@[^@]\+>'; then
+			if echo "$line" | grep -qi '^mail from:<[^@]\+\(@[^@]\+\)\?>'; then
 				# mail command resets SMTP dialogue, therefore remove
 				# anything we've gotten so far
 				rm -f "${FQP}".*
@@ -730,9 +740,9 @@ smtp_server() {
 		fi
 
 		# Got a recipient
-		if [ "$state" = "rcpt" ] && echo "$line" | grep -qiE "^rcpt to:<[^@]+@[^@]+>"; then
+		if [ "$state" = "rcpt" ] && echo "$line" | grep -qiE "^rcpt to:<[^@]+(@[^@]+)?>"; then
 			local newto
-			newto="$(echo "$line"|sed -e 's/[Rr][Cc][Pp][Tt] [Tt][Oo]:<\([^@][^@]*@[^@][^@]*\)>.*/\1/')"
+			newto="$(echo "$line"|sed -e 's/[Rr][Cc][Pp][Tt] [Tt][Oo]:<\([^@][^@]*\(@[^@][^@]*\)\?\)>.*/\1/')"
 
 			# Bad input on RCPT TO
 			if [ -z "$newto" ]; then
@@ -752,7 +762,7 @@ smtp_server() {
 '
 			continue			# next line
 		# Got RCPT TO in at the wrong time
-		elif [ "$state" != "rcpt" ] && echo "$line" | grep -qiE "^rcpt to:<[^@]+@[^@]+>"; then
+		elif [ "$state" != "rcpt" ] && echo "$line" | grep -qiE "^rcpt to:<[^@]+@[^@][^@]*>"; then
 			echo "503 Command out of sequence"
 			log err "[SMTP] RCPT TO: when not expecting it: $line"
 		fi
@@ -797,7 +807,8 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 			log debug "Got $(wc -c "${FQP}.mail") bytes of DATA"
 
 			# Record sender and recipients in msmtp command line form
-			echo '\-f' "$from -- $to" >"${FQP}".msmtp
+			# shellcheck disable=SC2169
+			echo '-f' "$from -- $to" >"${FQP}".msmtp
 			RC=$?
 
 			# If we failed to record msmtp command line report error
@@ -829,6 +840,9 @@ s/^\([^.].*\)$/\1/' >>"${FQP}.mail"
 				echo "554 Transaction failed"
 				log err -e $RC "[SMTP] Transaction failed"
 			fi
+		else
+			echo "500 Syntax error, command unrecognized"
+			log debug "[SMTP] Unrecognized command or syntax"
                 fi
 		IFS='
 '
@@ -914,9 +928,14 @@ while [ -n "$1" ]; do
 		exit 0
 		;;
 	"-qI")
-		lock_queue -lq send_queued_mail "$@"
-		RC=$?
-		exit $RC
+		if [ "$1" = "ALL" ]; then
+			lock_queue -lq run_queue
+			exit 0
+		else
+			lock_queue -lq send_queued_mail "$@"
+			RC=$?
+			exit $RC
+		fi
 		;;
 	"--help")
 		usage

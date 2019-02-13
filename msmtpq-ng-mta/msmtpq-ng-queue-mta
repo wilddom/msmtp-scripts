@@ -38,15 +38,17 @@ if [ "$MSMTP_MTA_SKIP_CONF" != "true" ]; then
 fi
 
 [ -z "$LOG" ] && LOG=syslog
-[ -z "$Q" ] && Q=/var/spool/msmtp/"${USER}"
-[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock/msmtp/"${USER}"
-[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=057
-[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=007
+[ -z "$Q" ] && Q=/var/spool/msmtp/"$(id -un)"
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock/msmtp/"$(id -un)"
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=007
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
 [ -z "$MSMTP_QUEUE_QUIET" ] && MSMTP_QUEUE_QUIET=true
 [ -z "$MSMTP_IGNORE_NO_RECIPIENTS" ] && MSMTP_IGNORE_NO_RECIPIENTS=true
 [ -z "$MSMTPQ_NG_QUEUE" ] && MSMTPQ_NG_QUEUE=msmtpq-ng-queue
+[ -z "$MSMTPQ_NG" ] && MSMTPQ_NG=msmtpq-ng
+[ -z "$MSMTP_CONF" ] && MSMTP_CONF=/etc/msmtpq-ng-mta-msmtprc
 
-export LOG Q MSMTP_LOCK_DIR MSMTP_LOG_UMASK MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG_QUEUE
+export LOG Q MSMTP_LOG_UMASK MSMTP_LOCK_DIR MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG MSMTP_CONF MSMTPQ_NG_QUEUE EMAIL_CONN_TEST EMAIL_CONN_TEST_PING EMAIL_CONN_TEST_IP EMAIL_CONN_TEST_SITE MSMTP_HOLD_SMTP_MAIL MSMTP_HOLD_CLI_MAIL
 
 [ -x "$MSMTPQ_NG_QUEUE" ] && exec "$MSMTPQ_NG_QUEUE" "$@"
 [ -n "$(command -v "$MSMTPQ_NG_QUEUE")" ]  && exec msmtpq-ng-queue "$@"
@@ -54,4 +56,3 @@ export LOG Q MSMTP_LOCK_DIR MSMTP_LOG_UMASK MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_
 echo "mailq: unable to find msmtpq-ng-queue" >&2
 # From sysexits.h: EX_OSFILE
 exit 72
-

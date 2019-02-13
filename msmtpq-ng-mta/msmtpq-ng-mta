@@ -37,10 +37,10 @@ fi
 
 [ -z "$MSMTP_CONF" ] && MSMTP_CONF=/etc/msmtpq-ng-mta-msmtprc
 [ -z "$LOG" ] && LOG=syslog
-[ -z "$Q" ] && Q=/var/spool/msmtp/"${USER}"
-[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock/msmtp/"${USER}"
-[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=057
-[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=007
+[ -z "$Q" ] && Q=/var/spool/msmtp/"$(id -un)"
+[ -z "$MSMTP_LOCK_DIR" ] && MSMTP_LOCK_DIR=/var/lock/msmtp/"$(id -un)"
+[ -z "$MSMTP_LOG_UMASK" ] && MSMTP_LOG_UMASK=007
+[ -z "$MSMTP_UMASK" ] && MSMTP_UMASK=077
 [ -z "$MSMTP_QUEUE_QUIET" ] && MSMTP_QUEUE_QUIET=true
 [ -z "$MSMTP_IGNORE_NO_RECIPIENTS" ] && MSMTP_IGNORE_NO_RECIPIENTS=true
 [ -z "$MSMTPQ_NG" ] && MSMTPQ_NG=msmtpq-ng
@@ -50,14 +50,22 @@ umask $MSMTP_UMASK
 # Create per-user queue dir but only if main queue dir exists
 if [ ! -d "${Q}" ] && [ -d "$(dirname "${Q}")" ]; then
 	mkdir -p "${Q}"
+elif [ ! -d "${Q}" ]; then
+	# shellcheck disable=SC2174
+	mkdir -m1777 -p "$(dirname "${Q}")"
+	umask $MSMTP_UMASK
+	mkdir -p "${Q}"
 fi
 
 # Create per-user lock dir
 if [ ! -d "${MSMTP_LOCK_DIR}" ]; then
+	# shellcheck disable=SC2174
+	mkdir -m1777 -p "$(dirname "${MSMTP_LOCK_DIR}")"
+	umask $MSMTP_UMASK
 	mkdir -p "${MSMTP_LOCK_DIR}"
 fi
 
-export LOG Q MSMTP_LOG_UMASK MSMTP_LOCK_DIR MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG MSMTP_CONF
+export LOG Q MSMTP_LOG_UMASK MSMTP_LOCK_DIR MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_IGNORE_NO_RECIPIENTS MSMTPQ_NG MSMTP_CONF MSMTPQ_NG_QUEUE EMAIL_CONN_TEST EMAIL_CONN_TEST_PING EMAIL_CONN_TEST_IP EMAIL_CONN_TEST_SITE MSMTP_HOLD_SMTP_MAIL MSMTP_HOLD_CLI_MAIL
 
 [ -x "$MSMTPQ_NG" ] && exec "$MSMTPQ_NG" "$@"
 [ -n "$(command -v "$MSMTPQ_NG")" ]  && exec msmtpq-ng "$@"
@@ -65,4 +73,3 @@ export LOG Q MSMTP_LOG_UMASK MSMTP_LOCK_DIR MSMTP_UMASK MSMTP_QUEUE_QUIET MSMTP_
 echo "msmtpq-ng-mta: unable to find msmtpq-ng" >&2
 # From sysexits.h: EX_OSFILE
 exit 72
-
